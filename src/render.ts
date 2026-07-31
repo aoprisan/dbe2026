@@ -1,4 +1,12 @@
-import { DAYS, FESTIVAL, DATA_VERSION, RUNNING_ORDER_ANNOUNCED } from './data';
+import {
+  DAYS,
+  FESTIVAL,
+  DATA_VERSION,
+  RUNNING_ORDER_ANNOUNCED,
+  CURFEW,
+  SET_MINUTES,
+  CHANGEOVER_MINUTES,
+} from './data';
 import type { FestivalDay, SetSlot } from './types';
 import {
   ALL_SLOTS,
@@ -616,7 +624,7 @@ function renderProvisionalNotice(): HTMLElement | null {
     el(
       'span',
       'provisional-sub',
-      `The posters give the bill per night and a ${FESTIVAL.doors} start, nothing more. Every time below is this app’s own provisional placement — marked “~” — in the order the poster lists the acts. Picks, reminders and the calendar export all still work; they just move when the real times land.`,
+      `The posters give the bill per night and a ${FESTIVAL.doors} start, nothing more. The grid below is this app’s own placement — marked “~” — in the order the poster lists the acts: ${SET_MINUTES}-minute sets, ${CHANGEOVER_MINUTES}-minute changeovers, and a last note by ${CURFEW.to}, because the venue has to be quiet for the police after that. Picks, reminders and the calendar export all still work; they just move when the real times land.`,
     ),
   );
   bar.appendChild(text);

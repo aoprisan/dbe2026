@@ -63,6 +63,12 @@ The core festival details, nights, prices, and set times live in
 [`src/data.ts`](src/data.ts). Band genres, countries, and curated listening links
 live in [`src/band-meta.ts`](src/band-meta.ts).
 
+Until the official running order lands, the provisional grid is built from three
+known constraints: roughly 50-minute sets, roughly 25-minute changeovers, and a
+hard finish between 23:30 and 23:45 — the venue's noise limit with the police.
+The slots are laid backwards from that curfew, which puts the first set at 19:00
+and the last note at 23:35.
+
 When an official running order is announced:
 
 1. Replace the provisional times in `src/data.ts`.
