@@ -165,10 +165,9 @@ function renderHeader(): HTMLElement {
   const title = el('div', 'brand');
   title.appendChild(el('h1', 'brand-name', FESTIVAL.name));
   const sub = el('p', 'brand-sub');
-  // No "·" before the link: it is the one part that may wrap to its own line,
-  // and a separator left stranded at the start of that line reads as a typo.
-  // The pin does the separating instead.
-  sub.append(`${FESTIVAL.edition} · ${FESTIVAL.dates} `);
+  // No "·" before the link: it takes a line of its own, and a separator left
+  // stranded at the end of this one reads as a typo. The pin separates instead.
+  sub.append(`${FESTIVAL.edition} · ${FESTIVAL.dates}`);
   sub.appendChild(renderMapLink());
   title.appendChild(sub);
 
@@ -186,9 +185,13 @@ function renderHeader(): HTMLElement {
 }
 
 /**
- * The venue line, but tappable: it hands the site straight to Google Maps for
+ * The venue block, but tappable: it hands the site straight to Google Maps for
  * directions. An anchor rather than a button so it behaves like every other
  * link on the phone — long-press to copy, open in a new tab, share it on.
+ *
+ * The gate and street ride inside the same anchor rather than beside it: they
+ * are the answer to the same question, and folding them in makes the whole
+ * two-line block one comfortable thumb target instead of a 0.7rem strip.
  */
 function renderMapLink(): HTMLAnchorElement {
   const a = el('a', 'brand-map') as HTMLAnchorElement;
@@ -196,9 +199,17 @@ function renderMapLink(): HTMLAnchorElement {
   a.target = '_blank';
   a.rel = 'noopener noreferrer';
   a.title = 'Open the venue in Google Maps';
-  a.setAttribute('aria-label', `Open ${FESTIVAL.location} in Google Maps`);
-  a.appendChild(el('span', 'brand-map-pin', '📍'));
-  a.append(FESTIVAL.location);
+  a.setAttribute(
+    'aria-label',
+    `Open ${FESTIVAL.location}, ${FESTIVAL.venueWhere}, in Google Maps`,
+  );
+
+  const line = el('span', 'brand-map-line');
+  line.appendChild(el('span', 'brand-map-pin', '📍'));
+  line.append(FESTIVAL.location);
+  a.appendChild(line);
+
+  a.appendChild(el('span', 'brand-map-where', FESTIVAL.venueWhere));
   return a;
 }
 

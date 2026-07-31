@@ -13,6 +13,12 @@ export const FESTIVAL = {
   venue: 'Poarta 7 by Ryma',
   location: 'Poarta 7 by Ryma · Alba Iulia, Romania',
   /**
+   * Where in town, for anyone arriving without the map open: the venue is set
+   * into the northern wall of the citadel at its seventh gate, off Str. Gemina
+   * — a place you walk to through the fortress, not an address you drive to.
+   */
+  venueWhere: 'Alba Carolina Citadel, Gate VII · Str. Gemina',
+  /**
    * The town on its own, for the share and recap images: their header line is
    * drawn on a 560px canvas and the full venue line does not fit, so it would
    * be cut mid-word rather than simply saying less.
