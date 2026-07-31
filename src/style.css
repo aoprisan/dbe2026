@@ -805,20 +805,51 @@ body {
   text-transform: uppercase;
   color: var(--muted);
 }
-/* The moon under the date: quiet, one line, never wider than the date above. */
-.night-moon {
+/* The sky under the date: sunset and moon, quiet, wrapping rather than
+   stretching the header on a narrow phone. */
+.night-sky {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 5px;
+  gap: 4px 10px;
   margin: 4px 0 0;
   font-family: var(--font-mono);
   font-size: 0.64rem;
   letter-spacing: 0.04em;
   color: var(--muted);
+}
+.night-sky-part {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
   cursor: help;
 }
-.night-moon-glyph {
+.night-sky-glyph {
   font-size: 0.8rem;
+  line-height: 1;
+}
+/* The eclipse: the one line in this header that has earned a colour. Warm,
+   low-contrast against the black — a sun going down, not an error state. */
+.night-eclipse {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+  /* Narrow phones: wrap the text inside the pill rather than pushing the
+     header wider than the sheet. */
+  max-width: 100%;
+  margin: 5px 0 0;
+  padding: 3px 8px;
+  border: 1px solid color-mix(in srgb, #e0863f 45%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, #e0863f 10%, transparent);
+  font-family: var(--font-mono);
+  font-size: 0.63rem;
+  letter-spacing: 0.04em;
+  color: #f0a868;
+  cursor: help;
+}
+.night-eclipse-glyph {
+  font-size: 0.78rem;
   line-height: 1;
 }
 .night-head-right {
@@ -2103,6 +2134,17 @@ body {
   border: 1px solid var(--line);
   white-space: nowrap;
 }
+/* One chip on one night is not a forecast detail but an event — it gets the
+   same warm ink as the eclipse line in the night header, so the two read as
+   the same fact seen twice. */
+.weather-chip-eclipse {
+  color: #f0a868;
+  border-color: color-mix(in srgb, #e0863f 45%, transparent);
+  background: color-mix(in srgb, #e0863f 10%, transparent);
+  /* The one chip long enough to outrun the row on a narrow phone. Every other
+     chip is two or three words and holds its line; this one says when. */
+  white-space: normal;
+}
 .weather-hours {
   padding: 0 10px 10px;
 }
@@ -2654,10 +2696,11 @@ body {
   flex-wrap: wrap;
   gap: 10px;
 }
-/* One look for both actions, though "Ask Claude" is an anchor — only a real
-   link gets handed to the Claude app by the phone. */
+/* One look for every action, though the two assistants are anchors — only a
+   real link gets handed to their app by the phone. They share the top row;
+   "Copy prompt", which serves every other assistant, takes the one below. */
 .ask-btn {
-  flex: 1 1 140px;
+  flex: 1 1 130px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -2679,6 +2722,9 @@ body {
 .ask-btn:disabled {
   opacity: 0.55;
   cursor: not-allowed;
+}
+.ask-btn-copy {
+  flex: 1 1 100%;
 }
 .ask-btn.primary {
   border-color: transparent;

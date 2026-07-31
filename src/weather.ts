@@ -1,5 +1,7 @@
-import { DAYS, FESTIVAL } from './data';
+import { DAYS, FESTIVAL, VENUE_SITE } from './data';
 import { moonLabel, moonTitle, nightMoon } from './moon';
+import { sunForDay, sunsetLabel, sunsetTitle } from './sun';
+import { eclipseForDay, eclipseLabel, eclipseTitle } from './eclipse';
 import {
   adjustHigh,
   adjustLow,
@@ -11,10 +13,12 @@ import {
   renderHindsight,
 } from './hindsight';
 
-// Festival site: Poarta 7 by Ryma, in the Alba Iulia citadel, Romania.
-const LAT = 46.07;
-const LON = 23.58;
-const TZ = 'Europe/Bucharest';
+// Festival site: Poarta 7 by Ryma, in the Alba Iulia citadel, Romania. Shared
+// with the sunset and eclipse maths so the forecast and the sky agree on where
+// "here" is.
+const LAT = VENUE_SITE.lat;
+const LON = VENUE_SITE.lon;
+const TZ = VENUE_SITE.timeZone;
 
 // Free, keyless, CORS-enabled forecast API.
 const API = 'https://api.open-meteo.com/v1/forecast';
@@ -589,12 +593,26 @@ function renderDays(body: HTMLElement, days: DailyForecast[], hours: HourForecas
     if (!hasTemp(f) && f?.precip == null && f?.wind == null) {
       meta.appendChild(chip('Forecast not available yet'));
     }
-    // The moon is the one thing on this row that needs no forecast and no
-    // signal — it is arithmetic, and it holds whatever the API can't reach.
+    // The sky is the part of this row that needs no forecast and no signal — it
+    // is arithmetic, and it holds whatever the API can't reach.
+    const sun = sunForDay(day.id);
+    if (sun) {
+      const sunsetChip = chip(`🌇 ${sunsetLabel(sun.sunset)}`);
+      sunsetChip.title = sunsetTitle(sun);
+      meta.appendChild(sunsetChip);
+    }
     const moon = nightMoon(day);
     const moonChip = chip(`${moon.emoji} ${moonLabel(moon)}`);
     moonChip.title = moonTitle(moon);
     meta.appendChild(moonChip);
+    // And on one night of this edition, the sun does not set unaccompanied.
+    const eclipse = eclipseForDay(day.id);
+    if (eclipse?.visible) {
+      const eclipseChip = chip(`🌘 ${eclipseLabel(eclipse)}`);
+      eclipseChip.title = eclipseTitle(eclipse);
+      eclipseChip.classList.add('weather-chip-eclipse');
+      meta.appendChild(eclipseChip);
+    }
     info.appendChild(meta);
     row.appendChild(info);
 

@@ -96,12 +96,21 @@ const SECTIONS: Section[] = [
   },
   {
     icon: '🌤',
-    title: 'Weather and the moon',
+    title: 'Weather and the sky',
     body:
       'The forecast covers festival hours, night by night and set by set, and carries a report ' +
       'card that grades how the same forecast has done on the last ten finished days — the ' +
-      'estimate on screen is nudged by what it got wrong, and says so with a *. The moon over ' +
-      'each night is computed on the device, so it still shows with no signal.',
+      'estimate on screen is nudged by what it got wrong, and says so with a *. Sunset and the ' +
+      'moon over each night are computed on the device, so they still show with no signal.',
+  },
+  {
+    icon: '🌘',
+    title: 'The eclipse on the opening night',
+    body:
+      'On 12 August the sun sets over the citadel already partly covered by the moon — it starts ' +
+      'at 20:24 and the sun goes down still eclipsed at 20:39, in the gap between doors and the ' +
+      'first performance. This is not the total eclipse; that one is over the Atlantic and ' +
+      'northern Spain. Looking at it needs certified eclipse filters, low and dim though it seems.',
   },
   {
     icon: '🕯',
@@ -123,9 +132,10 @@ const SECTIONS: Section[] = [
     title: 'Ask about the festival',
     body:
       'For the questions this planner does not answer — getting to Alba Iulia, what an August ' +
-      'night in the citadel is like — your question is handed to an assistant together with a ' +
-      'written brief of the whole bill. You can read exactly what gets sent, and nothing leaves ' +
-      'this device until you tap through.',
+      'night in the citadel is like — your question is handed to Claude or ChatGPT together with ' +
+      'a written brief of the whole bill. It opens in whichever app you have installed, or on ' +
+      'the web. You can read exactly what gets sent, and nothing leaves this device until you ' +
+      'tap through.',
   },
   {
     icon: '⤓',

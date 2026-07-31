@@ -9,6 +9,8 @@ import {
 } from './data';
 import { nightSlots } from './schedule';
 import { moonLabel, nightMoon } from './moon';
+import { festivalClock, sunForDay } from './sun';
+import { eclipseBriefLines, eclipseForDay } from './eclipse';
 import { selection } from './store';
 import { copyText } from './clipboard';
 import type { SetSlot } from './types';
@@ -25,10 +27,11 @@ import type { SetSlot } from './types';
  * tedious part, so the app writes it: one button hands over the line-up, the
  * venue, the curfew and (optionally) your own picks, with the question on top.
  *
- * Two ways out, because not everyone uses the same assistant: open it straight
- * in Claude, or copy the whole prompt and paste it wherever you like. Nothing is
- * sent anywhere by this app — the copy stays on the clipboard, and the Claude
- * button just opens claude.ai with the prompt in the composer.
+ * Three ways out, because not everyone uses the same assistant: open it in
+ * Claude, open it in ChatGPT, or copy the whole prompt and paste it wherever you
+ * like. Nothing is sent anywhere by this app — the copy stays on the clipboard,
+ * and each button just opens that assistant's own site with the prompt sitting
+ * in the composer, which on a phone means its app.
  */
 
 const el = <K extends keyof HTMLElementTagNameMap>(
@@ -77,6 +80,27 @@ const SUGGESTIONS: ReadonlyArray<{ label: string; question: string }> = [
       'I can only make two of the four nights. Compare them and tell me which two you would pick, and why.',
   },
 ];
+
+/**
+ * The openers actually shown. One of them only exists in editions where the sky
+ * does something — this year the opening night's sun sets partly eclipsed — so
+ * it is added from the same computation the rest of the app reads, rather than
+ * written into the list above and left to rot after August.
+ */
+function suggestions(): ReadonlyArray<{ label: string; question: string }> {
+  const eclipseNight = DAYS.find((day) => eclipseForDay(day.id)?.visible);
+  if (!eclipseNight) return SUGGESTIONS;
+  return [
+    {
+      label: '🌘 The eclipse',
+      question:
+        `The sun sets partly eclipsed over the venue on the opening night, between doors and the ` +
+        `first performance. How do I watch that safely, what will it actually look like that low ` +
+        `on the horizon, and where in the citadel would I get a clear view west?`,
+    },
+    ...SUGGESTIONS,
+  ];
+}
 
 function dateLabel(dateIso: string, long: boolean): string {
   return new Date(dateIso + 'T00:00:00').toLocaleDateString('en-GB', {
@@ -143,12 +167,23 @@ export function festivalBrief(includePicks: boolean): string {
 
   for (const day of DAYS) {
     const moon = nightMoon(day);
-    lines.push(
-      `${dateLabel(day.date, true)} — ${NIGHTS[day.id].name}  [moon at 22:00: ${moonLabel(moon)}]`,
-    );
+    const sun = sunForDay(day.id);
+    const sky = [
+      sun ? `sunset ${festivalClock(sun.sunset)}, dark by ${festivalClock(sun.duskCivil)}` : null,
+      `moon at 22:00: ${moonLabel(moon)}`,
+    ]
+      .filter(Boolean)
+      .join('; ');
+    lines.push(`${dateLabel(day.date, true)} — ${NIGHTS[day.id].name}  [${sky}]`);
     for (const slot of nightSlots(day.id)) {
       lines.push(slotLine(slot));
       if (slot.note) lines.push(`      ${slot.note}`);
+    }
+    // An eclipse is not a set, but it is the only thing on one of these nights
+    // that has a time and cannot be rescheduled — the assistant should know.
+    const eclipse = eclipseForDay(day.id);
+    if (eclipse?.visible) {
+      lines.push(...eclipseBriefLines(eclipse, dateLabel(day.date, true)));
     }
     lines.push('');
   }
@@ -191,20 +226,61 @@ export function askPrompt(question: string, includePicks: boolean): string {
 /**
  * Longest prompt we will try to hand over inside a link. Claude's own deep
  * links cap a pre-filled prompt at 5,000 characters; past that the composer
- * opens empty and the clipboard copy is what saves the day.
+ * opens empty and the clipboard copy is what saves the day. ChatGPT publishes
+ * no such number, so it gets the same conservative ceiling rather than an
+ * invented one — the fallback below is the same either way.
  */
 const MAX_PREFILL_CHARS = 5000;
 
 /**
- * Claude's new-chat composer, pre-filled. A plain `https://claude.ai` address
- * on purpose: on a phone with the Claude app installed, the OS hands these
- * links to the app instead of the browser, and everyone else lands on the web
- * app. (The `claude://` scheme goes to the Code tab and wants a Claude Code
- * account — the wrong door for someone asking what to pack.)
+ * Where a prompt can be sent.
+ *
+ * Both entries are plain `https://` addresses, and that is the whole trick: on
+ * a phone with the app installed, iOS and Android hand these to the app rather
+ * than the browser, and everyone else lands on the web version of the same
+ * thing. Custom schemes would be worse on both counts — `claude://` opens the
+ * Code tab and wants a Claude Code account, and `chatgpt://` simply fails for
+ * anyone without the app rather than falling back to the site.
  */
-export function claudeUrl(prompt: string): { url: string; prefilled: boolean } {
-  if (prompt.length > MAX_PREFILL_CHARS) return { url: 'https://claude.ai/new', prefilled: false };
-  return { url: `https://claude.ai/new?q=${encodeURIComponent(prompt)}`, prefilled: true };
+export interface Assistant {
+  id: string;
+  /** What the button says. */
+  label: string;
+  /** Where the composer lives, with the prompt in it. */
+  compose: (prompt: string) => string;
+  /** Where to land when the prompt is too long to travel in a link. */
+  blank: string;
+  /** Name used in the status line under the buttons. */
+  name: string;
+}
+
+export const ASSISTANTS: readonly Assistant[] = [
+  {
+    id: 'claude',
+    label: '💬 Ask Claude ↗',
+    name: 'Claude',
+    compose: (p) => `https://claude.ai/new?q=${encodeURIComponent(p)}`,
+    blank: 'https://claude.ai/new',
+  },
+  {
+    id: 'chatgpt',
+    label: '💬 Ask ChatGPT ↗',
+    name: 'ChatGPT',
+    // chatgpt.com is the current home and the one the mobile apps claim as a
+    // universal link; chat.openai.com only redirects to it, which would cost a
+    // hop and, on some Android versions, the hand-off to the app.
+    compose: (p) => `https://chatgpt.com/?q=${encodeURIComponent(p)}`,
+    blank: 'https://chatgpt.com/',
+  },
+];
+
+/** The composer URL for one assistant, and whether the prompt fits inside it. */
+export function assistantUrl(
+  assistant: Assistant,
+  prompt: string,
+): { url: string; prefilled: boolean } {
+  if (prompt.length > MAX_PREFILL_CHARS) return { url: assistant.blank, prefilled: false };
+  return { url: assistant.compose(prompt), prefilled: true };
 }
 
 /* ---------- the sheet ---------- */
@@ -242,7 +318,7 @@ function buildSheet(): HTMLDialogElement {
     el(
       'p',
       'sheet-sub',
-      'Ask anything about these four nights. Your question travels with everything this planner knows — the line-up, the times, the venue, the curfew — so you don’t have to explain the festival first. It opens in the Claude app if you have it, and on claude.ai if you don’t; copy it instead to use any other assistant.',
+      'Ask anything about these four nights. Your question travels with everything this planner knows — the line-up, the times, the venue, the sky over each night — so you don’t have to explain the festival first. Pick an assistant: it opens in that app if you have it installed, and on the web if you don’t. Or copy the prompt and paste it into any other.',
     ),
   );
 
@@ -260,7 +336,7 @@ function buildSheet(): HTMLDialogElement {
   body.appendChild(box);
 
   const chips = el('div', 'ask-chips');
-  for (const s of SUGGESTIONS) {
+  for (const s of suggestions()) {
     const chip = el('button', 'ask-chip', s.label);
     chip.type = 'button';
     chip.title = s.question;
@@ -290,21 +366,27 @@ function buildSheet(): HTMLDialogElement {
 
   const actions = el('div', 'ask-actions');
 
-  // A real link, not a scripted window.open: that is what lets a phone with the
-  // Claude app installed take the tap itself — iOS and Android only hand a
-  // claude.ai address to the app when the navigation comes from an activated
-  // anchor. Its href is rebuilt as the question changes, and once more on the
-  // click, so the prompt that travels is the prompt on screen.
-  const askLink = el('a', 'ask-btn primary', '💬 Ask Claude ↗') as HTMLAnchorElement;
-  askLink.id = 'ask-open';
-  askLink.target = '_blank';
-  askLink.rel = 'noopener noreferrer';
-  askLink.title = 'Open this prompt in the Claude app, or on claude.ai';
-  askLink.href = claudeUrl(askPrompt(question, includePicks)).url;
-  askLink.addEventListener('click', () => handleAsk());
-  actions.appendChild(askLink);
+  // Real links, not a scripted window.open: that is what lets a phone with the
+  // app installed take the tap itself — iOS and Android only hand claude.ai and
+  // chatgpt.com addresses to their apps when the navigation comes from an
+  // activated anchor. Each href is rebuilt as the question changes, and once
+  // more on the click, so the prompt that travels is the prompt on screen.
+  for (const [i, assistant] of ASSISTANTS.entries()) {
+    const link = el('a', 'ask-btn primary', assistant.label) as HTMLAnchorElement;
+    link.id = `ask-open-${assistant.id}`;
+    link.dataset.assistant = assistant.id;
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
+    link.title = `Open this prompt in the ${assistant.name} app, or in ${assistant.name} on the web`;
+    // The first is the filled button, the rest are outlined: the same prompt
+    // goes either way, so this is a default rather than a recommendation.
+    if (i > 0) link.classList.remove('primary');
+    link.href = assistantUrl(assistant, askPrompt(question, includePicks)).url;
+    link.addEventListener('click', () => handleAsk(assistant));
+    actions.appendChild(link);
+  }
 
-  const copyBtn = el('button', 'ask-btn', 'Copy prompt');
+  const copyBtn = el('button', 'ask-btn ask-btn-copy', 'Copy prompt');
   copyBtn.type = 'button';
   copyBtn.title = 'Copy the question and the brief, to paste into any assistant';
   copyBtn.addEventListener('click', () => {
@@ -354,7 +436,7 @@ function buildSheet(): HTMLDialogElement {
  * and drop the last status line, which described a prompt that no longer exists.
  */
 function refresh(): void {
-  syncAskLink();
+  syncAskLinks();
   paintPreview();
   setStatus('');
 }
@@ -372,14 +454,19 @@ function setStatus(text: string): void {
 }
 
 /**
- * Point the "Ask Claude" link at the prompt as it currently stands. Returns
- * whether the prompt is short enough to travel inside the link.
+ * Point every assistant link at the prompt as it currently stands. Returns the
+ * prompt and whether it is short enough to travel inside a link — the answer is
+ * the same for all of them, since they share one ceiling.
  */
-function syncAskLink(): { prompt: string; prefilled: boolean } {
+function syncAskLinks(): { prompt: string; prefilled: boolean } {
   const prompt = askPrompt(question, includePicks);
-  const { url, prefilled } = claudeUrl(prompt);
-  const link = sheet?.querySelector('#ask-open') as HTMLAnchorElement | null;
-  if (link) link.href = url;
+  let prefilled = true;
+  for (const assistant of ASSISTANTS) {
+    const result = assistantUrl(assistant, prompt);
+    prefilled = result.prefilled;
+    const link = sheet?.querySelector(`#ask-open-${assistant.id}`) as HTMLAnchorElement | null;
+    if (link) link.href = result.url;
+  }
   return { prompt, prefilled };
 }
 
@@ -390,22 +477,23 @@ function syncAskLink(): { prompt: string; prefilled: boolean } {
  * somewhere else. The copy is fire-and-forget; awaiting anything here would
  * only race the navigation the browser is already performing.
  */
-function handleAsk(): void {
-  const { prompt, prefilled } = syncAskLink();
+function handleAsk(assistant: Assistant): void {
+  const { prompt, prefilled } = syncAskLinks();
+  const who = assistant.name;
 
   void copyText(prompt).then((copied) => {
     if (prefilled) {
       setStatus(
         copied
-          ? 'Opening Claude with the prompt in its composer — the app, if you have it installed. It’s on your clipboard too.'
-          : 'Opening Claude with the prompt in its composer — the app, if you have it installed.',
+          ? `Opening ${who} with the prompt in its composer — the app, if you have it installed. It’s on your clipboard too.`
+          : `Opening ${who} with the prompt in its composer — the app, if you have it installed.`,
       );
       return;
     }
     setStatus(
       copied
-        ? 'Too long to travel in a link, so Claude opens empty — the prompt is copied, just paste it.'
-        : 'Too long to travel in a link. Use “Copy prompt”, then paste it into Claude.',
+        ? `Too long to travel in a link, so ${who} opens empty — the prompt is copied, just paste it.`
+        : `Too long to travel in a link. Use “Copy prompt”, then paste it into ${who}.`,
     );
   });
 }

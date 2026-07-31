@@ -45,6 +45,20 @@ export const FESTIVAL = {
 };
 
 /**
+ * Where the citadel actually is, for everything that has to be computed rather
+ * than fetched: the forecast lookup, the moon over each night, the sunset the
+ * nights begin against, and the eclipse that clips the first one. The elevation
+ * is the plateau the fortress stands on, not the Mureș valley below it.
+ */
+export const VENUE_SITE = {
+  lat: 46.07,
+  lon: 23.58,
+  elevationM: 250,
+  /** IANA zone — EEST (UTC+3) for all four nights. */
+  timeZone: 'Europe/Bucharest',
+} as const;
+
+/**
  * Google Maps' cross-platform URL: the same link opens the native app on
  * Android and iOS and the web map on desktop, so one anchor covers everyone.
  */

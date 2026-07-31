@@ -17,6 +17,8 @@ import {
   minutesToLabel,
 } from './schedule';
 import { moonLabel, moonTitle, nightMoon } from './moon';
+import { sunForDay, sunsetLabel, sunsetTitle } from './sun';
+import { eclipseForDay, eclipseLabel, eclipseTitle } from './eclipse';
 import { renderDiscover } from './discover';
 import { openGuide } from './guide';
 import { openCrew, friendsForSlot, subscribeCrew, initials } from './crew';
@@ -762,18 +764,54 @@ function renderProvisionalNotice(): HTMLElement | null {
 }
 
 /**
- * The moon over this night, next to its date. Four nights in an open courtyard
- * inside a fortress: whether there is a moon up there — and how much of it —
- * is part of what the evening will look like.
+ * The sky over this night, under its date: when the sun goes, and what moon
+ * replaces it. Four nights in an open courtyard inside a fortress, with doors
+ * at 18:00 — so the first stretch of every night happens in daylight, and when
+ * that daylight ends is part of what the evening will look like.
  */
-function renderNightMoon(day: FestivalDay): HTMLElement {
+function renderNightSky(day: FestivalDay): HTMLElement {
+  const line = el('p', 'night-sky');
+
+  const sun = sunForDay(day.id);
+  if (sun) {
+    const sunset = el('span', 'night-sky-part');
+    sunset.title = sunsetTitle(sun);
+    const glyph = el('span', 'night-sky-glyph', '🌇');
+    glyph.setAttribute('aria-hidden', 'true');
+    sunset.appendChild(glyph);
+    sunset.appendChild(el('span', 'night-sky-text', sunsetLabel(sun.sunset)));
+    line.appendChild(sunset);
+  }
+
   const phase = nightMoon(day);
-  const line = el('p', 'night-moon');
-  line.title = moonTitle(phase);
-  const glyph = el('span', 'night-moon-glyph', phase.emoji);
+  const moon = el('span', 'night-sky-part');
+  moon.title = moonTitle(phase);
+  const moonGlyph = el('span', 'night-sky-glyph', phase.emoji);
+  moonGlyph.setAttribute('aria-hidden', 'true');
+  moon.appendChild(moonGlyph);
+  moon.appendChild(el('span', 'night-sky-text', moonLabel(phase)));
+  line.appendChild(moon);
+
+  return line;
+}
+
+/**
+ * The rarest thing on the bill, and not on the bill at all: on the opening
+ * night of this edition the sun sets over the citadel already bitten into by
+ * the moon. It lands between doors and the first performance, so it is the one
+ * piece of sky here that is genuinely actionable — hence its own line, marked,
+ * rather than another grey chip nobody reads.
+ */
+function renderNightEclipse(day: FestivalDay): HTMLElement | null {
+  const e = eclipseForDay(day.id);
+  if (!e?.visible) return null;
+
+  const line = el('p', 'night-eclipse');
+  line.title = eclipseTitle(e);
+  const glyph = el('span', 'night-eclipse-glyph', '🌘');
   glyph.setAttribute('aria-hidden', 'true');
   line.appendChild(glyph);
-  line.appendChild(el('span', 'night-moon-text', moonLabel(phase)));
+  line.appendChild(el('span', 'night-eclipse-text', eclipseLabel(e)));
   return line;
 }
 
@@ -795,7 +833,9 @@ function renderNightHead(day: FestivalDay): HTMLElement {
       }),
     ),
   );
-  left.appendChild(renderNightMoon(day));
+  left.appendChild(renderNightSky(day));
+  const eclipse = renderNightEclipse(day);
+  if (eclipse) left.appendChild(eclipse);
   head.appendChild(left);
 
   const right = el('div', 'night-head-right');
