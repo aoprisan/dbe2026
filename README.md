@@ -2,7 +2,8 @@
 
 An unofficial, installable night planner for the 12th edition of
 [Dark Bombastic Evening](https://www.facebook.com/DarkBombasticEvening), held at
-RÂMA in Alba Iulia, Romania, from 12–15 August 2026.
+Poarta 7 by Ryma — the RYMA spaces in the Alba Iulia citadel, Romania — from
+12–15 August 2026.
 
 **[Open the planner](https://aoprisan.github.io/dbe2026/)**
 
@@ -18,6 +19,7 @@ RÂMA in Alba Iulia, Romania, from 12–15 August 2026.
 - Search, taste-based discovery, and changeover summaries
 - Shareable pick links, QR codes, and crew overlays
 - Calendar export and optional local reminders
+- One-tap directions to the venue in Google Maps
 - Festival-hour weather from Open-Meteo
 - Ticket prices and estimated plan cost
 - A post-show journal, ratings, statistics, and recap image
@@ -62,6 +64,12 @@ npm run preview
 The core festival details, nights, prices, and set times live in
 [`src/data.ts`](src/data.ts). Band genres, countries, and curated listening links
 live in [`src/band-meta.ts`](src/band-meta.ts).
+
+Until the official running order lands, the provisional grid is built from three
+known constraints: roughly 50-minute sets, roughly 25-minute changeovers, and a
+hard finish between 23:30 and 23:45 — the venue's noise limit with the police.
+The slots are laid backwards from that curfew, which puts the first set at 19:00
+and the last note at 23:35.
 
 When an official running order is announced:
 

@@ -1,6 +1,6 @@
 import { DAYS, FESTIVAL } from './data';
 
-// Festival site: RÂMA, Alba Iulia, Romania.
+// Festival site: Poarta 7 by Ryma, in the Alba Iulia citadel, Romania.
 const LAT = 46.07;
 const LON = 23.58;
 const TZ = 'Europe/Bucharest';
@@ -15,10 +15,11 @@ const API = 'https://api.open-meteo.com/v1/forecast';
 const CACHE_KEY = 'dbe12:weather:v1';
 const CACHE_TTL_MS = 60 * 60 * 1000; // an hour is plenty for a daily forecast
 
-// DBE starts at 18:00 and runs into the small hours, so the "day" we care about
-// weather-wise is 16:00 through 03:00 the following morning.
+// Doors are at 18:00 and the curfew stops the music before midnight, so the
+// "day" we care about weather-wise is 16:00 through 00:00 — early enough to
+// cover the walk in, late enough to cover the way home.
 const HOUR_FROM = 16; // inclusive, on the day's date
-const HOUR_TO = 27; // exclusive; 24–27 map to 00:00–02:00 the next morning
+const HOUR_TO = 25; // exclusive; 24 maps to 00:00 the next morning
 
 interface DailyForecast {
   date: string; // ISO yyyy-mm-dd
@@ -226,7 +227,7 @@ function addDays(iso: string, n: number): string {
   return d.toISOString().slice(0, 10);
 }
 
-/** ISO keys + labels for the festival hours (16:00 → 02:00) of a given day. */
+/** ISO keys + labels for the festival hours (16:00 → 00:00) of a given day. */
 function hourKeys(date: string): { key: string; label: string }[] {
   const out: { key: string; label: string }[] = [];
   for (let h = HOUR_FROM; h < HOUR_TO; h++) {
@@ -340,8 +341,8 @@ async function fetchForecast(): Promise<{ days: DailyForecast[]; hours: HourFore
       'weather_code,temperature_2m,precipitation_probability,precipitation,wind_speed_10m,is_day',
     timezone: TZ,
     start_date: firstDate(),
-    // Sets on the final night spill past midnight, so pull one extra day of
-    // hourly data to cover those small hours.
+    // The hour strip closes on midnight, which belongs to the next calendar
+    // day, so pull one extra day of hourly data to cover it.
     end_date: addDays(lastDate(), 1),
   });
 

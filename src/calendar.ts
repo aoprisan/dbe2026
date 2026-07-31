@@ -1,4 +1,4 @@
-import { DAYS, FESTIVAL } from './data';
+import { DAYS, FESTIVAL, mapsUrl } from './data';
 import { getSlot } from './schedule';
 import { selection } from './store';
 import { leadMinutes } from './notify';
@@ -87,7 +87,7 @@ function vevent(
       `DESCRIPTION:${esc(
         `${FESTIVAL.name} ${FESTIVAL.edition} — ${slot.night.name}${
           slot.tba ? '. Provisional slot: the official running order is not out yet.' : ''
-        }`,
+        }\nDirections: ${mapsUrl()}`,
       )}`,
       'SEQUENCE:0',
       'BEGIN:VALARM',

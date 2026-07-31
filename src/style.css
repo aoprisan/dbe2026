@@ -111,6 +111,40 @@ body {
   line-height: 1.4;
 }
 
+/* The venue block of the brand line, opening Google Maps: the name, then the
+   gate and street under it. Dotted rather than solid underline so it reads as
+   a link without shouting over the header, and only on the name — an
+   underlined address would look like two links stacked. */
+.brand-map {
+  /* Its own line at every width: two stacked lines set inline would ride up
+     beside the dates on a wide header and read as a second column. */
+  display: block;
+  width: fit-content; /* the target hugs the text, not the empty column beside it */
+  margin-top: 2px;
+  padding: 3px 0; /* a thumb-sized target out of 0.7rem type */
+  color: inherit;
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+.brand-map:hover,
+.brand-map:focus-visible {
+  color: var(--accent);
+}
+.brand-map-line {
+  text-decoration: underline dotted currentColor;
+  text-underline-offset: 3px;
+}
+.brand-map-pin {
+  margin-right: 4px;
+}
+.brand-map-where {
+  display: block;
+  margin-top: 2px;
+  font-size: 0.62rem;
+  letter-spacing: 0.08em;
+  opacity: 0.75;
+}
+
 .brand-clock {
   margin: 6px 0 0;
   font-family: var(--font-mono);

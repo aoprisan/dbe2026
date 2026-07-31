@@ -4,41 +4,88 @@ export const FESTIVAL = {
   name: 'Dark Bombastic Evening',
   shortName: 'DBE',
   edition: '12th Edition',
-  venue: 'RÂMA',
-  location: 'RÂMA · Alba Iulia, Romania',
+  /**
+   * The RYMA spaces in the Alba Iulia citadel, listed on the map — and known
+   * locally — as "Poarta 7 by Ryma", after Gate VII it is built into. Named
+   * here exactly as the map names it, so the label in the header and the pin
+   * the venue link opens are recognisably the same place.
+   */
+  venue: 'Poarta 7 by Ryma',
+  location: 'Poarta 7 by Ryma · Alba Iulia, Romania',
+  /**
+   * Where in town, for anyone arriving without the map open: the venue is set
+   * into the northern wall of the citadel at its seventh gate, off Str. Gemina
+   * — a place you walk to through the fortress, not an address you drive to.
+   */
+  venueWhere: 'Alba Carolina Citadel, Gate VII · Str. Gemina',
+  /**
+   * The town on its own, for the share and recap images: their header line is
+   * drawn on a 560px canvas and the full venue line does not fit, so it would
+   * be cut mid-word rather than simply saying less.
+   */
+  city: 'Alba Iulia',
   dates: '12–15 August 2026',
   /** Doors / first note, as printed on the poster. */
   doors: '18:00',
+  /** What the "open in Maps" link searches for: the venue's own map listing. */
+  mapQuery: 'Poarta 7 by Ryma, Alba Iulia',
   ticketsUrl: 'https://eventbook.ro/music/bilete-dbe-12',
   siteUrl: 'https://www.facebook.com/DarkBombasticEvening',
 };
+
+/**
+ * Google Maps' cross-platform URL: the same link opens the native app on
+ * Android and iOS and the web map on desktop, so one anchor covers everyone.
+ */
+export function mapsUrl(): string {
+  const q = encodeURIComponent(FESTIVAL.mapQuery);
+  return `https://www.google.com/maps/search/?api=1&query=${q}`;
+}
 
 /**
  * Bump whenever the line-up or the running order below changes (a set added,
  * dropped or re-timed). Returning visitors whose last-seen stamp differs get a
  * one-time "line-up updated" banner so stale plans don't go unnoticed.
  */
-export const DATA_VERSION = '2026-07-31';
+export const DATA_VERSION = '2026-07-31b';
 
 /**
  * The official running order has not been published yet — the posters give the
- * bill per night, the venue, and "starting at 6 PM", nothing more. Every set
- * below is therefore placed on a provisional grid (see PROVISIONAL_SLOTS) in
- * the order the poster lists it, and flagged `tba` so the whole UI can say so.
+ * bill per night, the venue, and "starting at 6 PM", nothing more. What is
+ * known beyond the poster: sets run about 50 minutes, changeovers about 25, and
+ * the night must end between 23:30 and 23:45 (see CURFEW). Every set below is
+ * therefore placed on a provisional grid built from those three numbers (see
+ * PROVISIONAL_SLOTS), in the order the poster lists it, and flagged `tba` so
+ * the whole UI can say so.
  *
  * Flip this to false — and replace the times — the day the running order lands.
  */
 export const RUNNING_ORDER_ANNOUNCED = false;
 
 /**
- * The provisional shape of a band night: four sets from doors at 18:00 to the
- * small hours, with changeovers between them. Used only while `tba` is set.
+ * The night has to be over between 23:30 and 23:45 — the venue's noise
+ * agreement with the police, not a soft target. Nothing on the provisional grid
+ * may be placed past it, and the last note is set inside this window rather
+ * than against its far edge.
+ */
+export const CURFEW = { from: '23:30', to: '23:45' } as const;
+
+/** Set length and changeover used to build the provisional grid, in minutes. */
+export const SET_MINUTES = 50;
+export const CHANGEOVER_MINUTES = 25;
+
+/**
+ * The provisional shape of a band night: four ~50-minute sets with ~25-minute
+ * changeovers between them, laid backwards from the curfew so the last note
+ * falls at 23:35. That fixes the first downbeat at 19:00 — an hour after doors
+ * — and gives a 75-minute cadence you can plan a night around. Used only while
+ * `tba` is set.
  */
 export const PROVISIONAL_SLOTS: ReadonlyArray<{ start: string; end: string }> = [
-  { start: '18:30', end: '19:30' },
-  { start: '20:00', end: '21:00' },
-  { start: '21:30', end: '22:45' },
-  { start: '23:15', end: '00:45' },
+  { start: '19:00', end: '19:50' },
+  { start: '20:15', end: '21:05' },
+  { start: '21:30', end: '22:20' },
+  { start: '22:45', end: '23:35' },
 ];
 
 /**
@@ -82,10 +129,10 @@ export const DAYS: FestivalDay[] = [
     date: '2026-08-13',
     price: 350,
     sets: [
-      { band: 'Årabrot', start: '18:30', end: '19:30', tba: true },
-      { band: 'Evoken', start: '20:00', end: '21:00', tba: true },
-      { band: 'Kwoon', start: '21:30', end: '22:45', tba: true },
-      { band: 'Wolvennest', start: '23:15', end: '00:45', tba: true },
+      { band: 'Årabrot', start: '19:00', end: '19:50', tba: true },
+      { band: 'Evoken', start: '20:15', end: '21:05', tba: true },
+      { band: 'Kwoon', start: '21:30', end: '22:20', tba: true },
+      { band: 'Wolvennest', start: '22:45', end: '23:35', tba: true },
     ],
   },
   {
@@ -94,10 +141,10 @@ export const DAYS: FestivalDay[] = [
     date: '2026-08-14',
     price: 375,
     sets: [
-      { band: 'Pothamus', start: '18:30', end: '19:30', tba: true },
-      { band: 'Heretoir', start: '20:00', end: '21:00', tba: true },
-      { band: 'Mesarthim', start: '21:30', end: '22:45', tba: true },
-      { band: 'This Will Destroy You', start: '23:15', end: '00:45', tba: true },
+      { band: 'Pothamus', start: '19:00', end: '19:50', tba: true },
+      { band: 'Heretoir', start: '20:15', end: '21:05', tba: true },
+      { band: 'Mesarthim', start: '21:30', end: '22:20', tba: true },
+      { band: 'This Will Destroy You', start: '22:45', end: '23:35', tba: true },
     ],
   },
   {
@@ -106,10 +153,10 @@ export const DAYS: FestivalDay[] = [
     date: '2026-08-15',
     price: 400,
     sets: [
-      { band: 'Opia', start: '18:30', end: '19:30', tba: true },
-      { band: 'Skuggsjá', start: '20:00', end: '21:00', tba: true },
-      { band: 'The Kilimanjaro Darkjazz Ensemble', start: '21:30', end: '22:45', tba: true },
-      { band: "Old Man's Child", start: '23:15', end: '00:45', tba: true },
+      { band: 'Opia', start: '19:00', end: '19:50', tba: true },
+      { band: 'Skuggsjá', start: '20:15', end: '21:05', tba: true },
+      { band: 'The Kilimanjaro Darkjazz Ensemble', start: '21:30', end: '22:20', tba: true },
+      { band: "Old Man's Child", start: '22:45', end: '23:35', tba: true },
     ],
   },
 ];

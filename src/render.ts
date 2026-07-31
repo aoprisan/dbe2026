@@ -1,4 +1,13 @@
-import { DAYS, FESTIVAL, DATA_VERSION, RUNNING_ORDER_ANNOUNCED } from './data';
+import {
+  DAYS,
+  FESTIVAL,
+  DATA_VERSION,
+  RUNNING_ORDER_ANNOUNCED,
+  CURFEW,
+  SET_MINUTES,
+  CHANGEOVER_MINUTES,
+  mapsUrl,
+} from './data';
 import type { FestivalDay, SetSlot } from './types';
 import {
   ALL_SLOTS,
@@ -156,7 +165,10 @@ function renderHeader(): HTMLElement {
   const title = el('div', 'brand');
   title.appendChild(el('h1', 'brand-name', FESTIVAL.name));
   const sub = el('p', 'brand-sub');
-  sub.textContent = `${FESTIVAL.edition} · ${FESTIVAL.dates} · ${FESTIVAL.location}`;
+  // No "·" before the link: it takes a line of its own, and a separator left
+  // stranded at the end of this one reads as a typo. The pin separates instead.
+  sub.append(`${FESTIVAL.edition} · ${FESTIVAL.dates}`);
+  sub.appendChild(renderMapLink());
   title.appendChild(sub);
 
   // Live wall clock — the current date and time, ticking while the app is open.
@@ -170,6 +182,35 @@ function renderHeader(): HTMLElement {
   stats.id = 'header-stats';
   header.appendChild(stats);
   return header;
+}
+
+/**
+ * The venue block, but tappable: it hands the site straight to Google Maps for
+ * directions. An anchor rather than a button so it behaves like every other
+ * link on the phone — long-press to copy, open in a new tab, share it on.
+ *
+ * The gate and street ride inside the same anchor rather than beside it: they
+ * are the answer to the same question, and folding them in makes the whole
+ * two-line block one comfortable thumb target instead of a 0.7rem strip.
+ */
+function renderMapLink(): HTMLAnchorElement {
+  const a = el('a', 'brand-map') as HTMLAnchorElement;
+  a.href = mapsUrl();
+  a.target = '_blank';
+  a.rel = 'noopener noreferrer';
+  a.title = 'Open the venue in Google Maps';
+  a.setAttribute(
+    'aria-label',
+    `Open ${FESTIVAL.location}, ${FESTIVAL.venueWhere}, in Google Maps`,
+  );
+
+  const line = el('span', 'brand-map-line');
+  line.appendChild(el('span', 'brand-map-pin', '📍'));
+  line.append(FESTIVAL.location);
+  a.appendChild(line);
+
+  a.appendChild(el('span', 'brand-map-where', FESTIVAL.venueWhere));
+  return a;
 }
 
 function renderDayTabs(): HTMLElement {
@@ -616,7 +657,7 @@ function renderProvisionalNotice(): HTMLElement | null {
     el(
       'span',
       'provisional-sub',
-      `The posters give the bill per night and a ${FESTIVAL.doors} start, nothing more. Every time below is this app’s own provisional placement — marked “~” — in the order the poster lists the acts. Picks, reminders and the calendar export all still work; they just move when the real times land.`,
+      `The posters give the bill per night and a ${FESTIVAL.doors} start, nothing more. The grid below is this app’s own placement — marked “~” — in the order the poster lists the acts: ${SET_MINUTES}-minute sets, ${CHANGEOVER_MINUTES}-minute changeovers, and a last note by ${CURFEW.to}, because the venue has to be quiet for the police after that. Picks, reminders and the calendar export all still work; they just move when the real times land.`,
     ),
   );
   bar.appendChild(text);
