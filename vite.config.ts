@@ -1,11 +1,31 @@
+import { execSync } from 'node:child_process';
 import { defineConfig } from 'vite';
 import { VitePWA } from 'vite-plugin-pwa';
 
 // GitHub Pages serves the project at /<repo>/ — keep base in sync with the repo name.
 const base = '/dbe2026/';
 
+// Stamped into the bundle so the app can say which build is on the device, and
+// so a rebuild always produces a byte-different entry chunk — which in turn
+// gives the service worker a new revision to install. The commit is a nicety
+// and quietly falls back to empty outside a git checkout.
+const buildTime = new Date().toISOString();
+const buildCommit = (() => {
+  try {
+    return execSync('git rev-parse --short HEAD', { stdio: ['ignore', 'pipe', 'ignore'] })
+      .toString()
+      .trim();
+  } catch {
+    return '';
+  }
+})();
+
 export default defineConfig({
   base,
+  define: {
+    __BUILD_TIME__: JSON.stringify(buildTime),
+    __BUILD_COMMIT__: JSON.stringify(buildCommit),
+  },
   plugins: [
     VitePWA({
       registerType: 'autoUpdate',

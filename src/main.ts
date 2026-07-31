@@ -3,7 +3,7 @@ import { mount, renderOfficialLinks } from './render';
 import { init as initNotifications } from './notify';
 import { importPicksFromUrl } from './picks-link';
 import { loadWallet } from './wallet';
-import { registerSW } from 'virtual:pwa-register';
+import { initServiceWorker, renderBuildInfo } from './update';
 
 // Import picks shared via a `#p=…` link before the first render so the app
 // opens straight onto the shared line-up.
@@ -30,6 +30,9 @@ if (app) {
   // The festival's own addresses, right under the line that says this planner
   // is not the festival — if the two ever disagree, theirs is the one that wins.
   footer.appendChild(renderOfficialLinks());
+  // Which build is on this device, and a way to go and fetch a newer one
+  // without waiting for the service worker to notice on its own.
+  footer.appendChild(renderBuildInfo());
   app.appendChild(footer);
 }
 
@@ -61,4 +64,4 @@ window.addEventListener('appinstalled', () => {
 });
 
 // ---- service worker ----
-registerSW({ immediate: true });
+initServiceWorker();

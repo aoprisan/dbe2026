@@ -2590,6 +2590,39 @@ body {
   border-bottom-color: var(--accent);
 }
 
+/* Build stamp and the manual update button. Deliberately the quietest thing on
+   the page — it only matters on the night a set time moves. */
+.footer-build {
+  margin: 14px 0 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: var(--muted);
+}
+.build-stamp {
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.02em;
+  opacity: 0.8;
+}
+.btn-update {
+  padding: 5px 10px;
+  font-size: 0.7rem;
+}
+.build-status {
+  flex-basis: 100%;
+  font-size: 0.66rem;
+  color: var(--accent);
+}
+.build-status.is-warn {
+  color: var(--warn);
+}
+.build-status[hidden] {
+  display: none;
+}
+
 #install-btn {
   position: fixed;
   bottom: calc(70px + env(safe-area-inset-bottom));
