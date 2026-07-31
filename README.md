@@ -28,6 +28,8 @@ from the app's footer, and are the word that outranks anything here.
 - Festival-hour weather from Open-Meteo, with a report card that benchmarks
   past forecasts against the real sky and lets today's estimate learn from
   those misses
+- The moon phase over each night, computed on the device — no network needed,
+  so it still shows when the forecast can't be fetched
 - Your own ticket, one tap from the bottom bar — the festival pass or a single
   night, imported from the shop's PDF or a photo, kept on the device, shown full
   screen at the gate, and marked once it becomes a wristband
