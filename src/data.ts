@@ -30,7 +30,18 @@ export const FESTIVAL = {
   /** What the "open in Maps" link searches for: the venue's own map listing. */
   mapQuery: 'Poarta 7 by Ryma, Alba Iulia',
   ticketsUrl: 'https://eventbook.ro/music/bilete-dbe-12',
-  siteUrl: 'https://www.facebook.com/DarkBombasticEvening',
+  /**
+   * The festival's own site, as the festival itself lists it. Anything this app
+   * deliberately does not carry — the official word on the running order, the
+   * house rules, whatever changes late — is theirs to publish and ours to link.
+   */
+  siteUrl: 'https://darkbombasticevening.com',
+  /**
+   * The Facebook page, by its numeric profile id rather than a vanity handle:
+   * the id is what the page resolves to and cannot be reassigned. This is where
+   * the posters and the day-to-day announcements actually land first.
+   */
+  facebookUrl: 'https://www.facebook.com/profile.php?id=100066546990712',
 };
 
 /**
