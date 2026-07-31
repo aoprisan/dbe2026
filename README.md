@@ -1,9 +1,14 @@
 # DBE 2026 Night Planner
 
 An unofficial, installable night planner for the 12th edition of
-[Dark Bombastic Evening](https://www.facebook.com/DarkBombasticEvening), held at
+[Dark Bombastic Evening](https://darkbombasticevening.com), held at
 Poarta 7 by Ryma — the RYMA spaces in the Alba Iulia citadel, Romania — from
 12–15 August 2026.
+
+The festival's own pages —
+[darkbombasticevening.com](https://darkbombasticevening.com) and
+[Facebook](https://www.facebook.com/profile.php?id=100066546990712) — are linked
+from the app's footer, and are the word that outranks anything here.
 
 **[Open the planner](https://aoprisan.github.io/dbe2026/)**
 
@@ -27,6 +32,7 @@ Poarta 7 by Ryma — the RYMA spaces in the Alba Iulia citadel, Romania — from
 - A link out to eventbook.ro for anyone who hasn't bought yet; prices and fees
   are the shop's to state, not this app's
 - A post-show journal, ratings, statistics, and recap image
+- Links out to the festival's official site and Facebook page
 - Offline support and installation as a Progressive Web App
 
 All personal data stays in the browser. There is no account, backend, or

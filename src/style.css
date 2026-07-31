@@ -2569,6 +2569,27 @@ body {
   color: var(--accent);
 }
 
+/* The festival's own pages. Set slightly apart from the disclaimer above it,
+   and given real tap targets — these are links people will actually follow. */
+.footer-official {
+  margin: 10px 0 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  color: var(--muted);
+}
+.footer-official a {
+  padding: 4px 6px;
+  border-bottom: 1px solid rgba(201, 169, 97, 0.35);
+  text-decoration: none;
+}
+.footer-official a:hover,
+.footer-official a:focus-visible {
+  border-bottom-color: var(--accent);
+}
+
 #install-btn {
   position: fixed;
   bottom: calc(70px + env(safe-area-inset-bottom));

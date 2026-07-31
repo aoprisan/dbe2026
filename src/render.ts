@@ -222,6 +222,35 @@ function renderMapLink(): HTMLAnchorElement {
   return a;
 }
 
+/**
+ * Where the festival speaks for itself. This planner is fan-made and says so in
+ * the same breath, so the footer that admits it is exactly where the official
+ * addresses belong: the moment anything here looks wrong or out of date, these
+ * are the two places that outrank it.
+ */
+export function renderOfficialLinks(): HTMLElement {
+  const wrap = el('p', 'footer-official');
+  wrap.append('Official: ');
+
+  const link = (href: string, label: string, title: string): HTMLAnchorElement => {
+    const a = el('a', undefined, label) as HTMLAnchorElement;
+    a.href = href;
+    a.target = '_blank';
+    a.rel = 'noopener noreferrer';
+    a.title = title;
+    return a;
+  };
+
+  wrap.appendChild(
+    link(FESTIVAL.siteUrl, 'darkbombasticevening.com', `${FESTIVAL.name} — official site`),
+  );
+  wrap.append(' · ');
+  wrap.appendChild(
+    link(FESTIVAL.facebookUrl, 'Facebook', `${FESTIVAL.name} on Facebook`),
+  );
+  return wrap;
+}
+
 function renderDayTabs(): HTMLElement {
   const nav = el('nav', 'day-tabs');
   nav.setAttribute('aria-label', 'Festival nights');
