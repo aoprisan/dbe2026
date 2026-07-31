@@ -37,6 +37,22 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,png,svg,woff2}'],
+        // pdf.js is only pulled in when someone imports a ticket PDF, and it is
+        // most of a megabyte — keeping it out of the precache leaves the app
+        // itself small to install. The rule below keeps a copy once it is
+        // actually fetched, so a second import works offline too.
+        globIgnores: ['**/pdf*.{js,mjs}'],
+        runtimeCaching: [
+          {
+            urlPattern: /\/assets\/pdf[^/]*\.m?js$/,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'pdfjs',
+              expiration: { maxEntries: 8 },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
+        ],
         navigateFallback: `${base}index.html`,
         cleanupOutdatedCaches: true,
       },

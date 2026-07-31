@@ -2,6 +2,7 @@ import './style.css';
 import { mount } from './render';
 import { init as initNotifications } from './notify';
 import { importPicksFromUrl } from './picks-link';
+import { loadWallet } from './wallet';
 import { registerSW } from 'virtual:pwa-register';
 
 // Import picks shared via a `#p=…` link before the first render so the app
@@ -14,6 +15,10 @@ if (app) {
 
   // Schedule set-start reminders for the user's picks (device-local).
   initNotifications();
+
+  // Read any imported tickets off the device so the night headers can offer
+  // them; the render subscribes and repaints when they arrive.
+  void loadWallet();
 
   const footer = document.createElement('footer');
   footer.className = 'app-footer';

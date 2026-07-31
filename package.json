@@ -19,6 +19,7 @@
     "vite-plugin-pwa": "^0.20.5"
   },
   "dependencies": {
+    "pdfjs-dist": "^4.10.38",
     "qrcode-generator": "^2.0.4"
   }
 }
