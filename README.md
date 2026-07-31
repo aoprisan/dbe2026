@@ -18,6 +18,7 @@ RÂMA in Alba Iulia, Romania, from 12–15 August 2026.
 - Search, taste-based discovery, and changeover summaries
 - Shareable pick links, QR codes, and crew overlays
 - Calendar export and optional local reminders
+- One-tap directions to the venue in Google Maps
 - Festival-hour weather from Open-Meteo
 - Ticket prices and estimated plan cost
 - A post-show journal, ratings, statistics, and recap image

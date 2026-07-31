@@ -6,6 +6,7 @@ import {
   CURFEW,
   SET_MINUTES,
   CHANGEOVER_MINUTES,
+  mapsUrl,
 } from './data';
 import type { FestivalDay, SetSlot } from './types';
 import {
@@ -164,7 +165,11 @@ function renderHeader(): HTMLElement {
   const title = el('div', 'brand');
   title.appendChild(el('h1', 'brand-name', FESTIVAL.name));
   const sub = el('p', 'brand-sub');
-  sub.textContent = `${FESTIVAL.edition} · ${FESTIVAL.dates} · ${FESTIVAL.location}`;
+  // No "·" before the link: it is the one part that may wrap to its own line,
+  // and a separator left stranded at the start of that line reads as a typo.
+  // The pin does the separating instead.
+  sub.append(`${FESTIVAL.edition} · ${FESTIVAL.dates} `);
+  sub.appendChild(renderMapLink());
   title.appendChild(sub);
 
   // Live wall clock — the current date and time, ticking while the app is open.
@@ -178,6 +183,23 @@ function renderHeader(): HTMLElement {
   stats.id = 'header-stats';
   header.appendChild(stats);
   return header;
+}
+
+/**
+ * The venue line, but tappable: it hands the site straight to Google Maps for
+ * directions. An anchor rather than a button so it behaves like every other
+ * link on the phone — long-press to copy, open in a new tab, share it on.
+ */
+function renderMapLink(): HTMLAnchorElement {
+  const a = el('a', 'brand-map') as HTMLAnchorElement;
+  a.href = mapsUrl();
+  a.target = '_blank';
+  a.rel = 'noopener noreferrer';
+  a.title = 'Open the venue in Google Maps';
+  a.setAttribute('aria-label', `Open ${FESTIVAL.location} in Google Maps`);
+  a.appendChild(el('span', 'brand-map-pin', '📍'));
+  a.append(FESTIVAL.location);
+  return a;
 }
 
 function renderDayTabs(): HTMLElement {

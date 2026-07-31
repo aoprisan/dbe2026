@@ -111,6 +111,26 @@ body {
   line-height: 1.4;
 }
 
+/* The venue half of the brand line, opening Google Maps. Dotted rather than
+   solid underline so it reads as a link without shouting over the header. */
+.brand-map {
+  display: inline-block;
+  padding: 3px 0; /* a thumb-sized target out of 0.7rem type */
+  color: inherit;
+  text-decoration: underline dotted currentColor;
+  text-underline-offset: 3px;
+  white-space: nowrap;
+  transition: color 0.15s ease;
+}
+.brand-map:hover,
+.brand-map:focus-visible {
+  color: var(--accent);
+}
+.brand-map-pin {
+  margin-right: 4px;
+  text-decoration: none;
+}
+
 .brand-clock {
   margin: 6px 0 0;
   font-family: var(--font-mono);

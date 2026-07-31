@@ -9,9 +9,25 @@ export const FESTIVAL = {
   dates: '12–15 August 2026',
   /** Doors / first note, as printed on the poster. */
   doors: '18:00',
+  /**
+   * What the "open in Maps" link searches for. A place name rather than a pin:
+   * the exact coordinates of the site are not published, and a search degrades
+   * to the right town instead of dropping a marker in the wrong field. Replace
+   * with "lat,lon" once the venue's own pin is confirmed.
+   */
+  mapQuery: 'RÂMA, Alba Iulia, Romania',
   ticketsUrl: 'https://eventbook.ro/music/bilete-dbe-12',
   siteUrl: 'https://www.facebook.com/DarkBombasticEvening',
 };
+
+/**
+ * Google Maps' cross-platform URL: the same link opens the native app on
+ * Android and iOS and the web map on desktop, so one anchor covers everyone.
+ */
+export function mapsUrl(): string {
+  const q = encodeURIComponent(FESTIVAL.mapQuery);
+  return `https://www.google.com/maps/search/?api=1&query=${q}`;
+}
 
 /**
  * Bump whenever the line-up or the running order below changes (a set added,
