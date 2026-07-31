@@ -1,11 +1,13 @@
 import qrcode from 'qrcode-generator';
-import { DAYS, NIGHTS } from './data';
+import { DAYS, FESTIVAL, NIGHTS } from './data';
 import type { NightId } from './types';
 import {
   importTicketFile,
+  loadWallet,
   removeTicket,
   setTicketScope,
   setWristband,
+  subscribeWallet,
   TicketImportError,
   walletTickets,
   type TicketScope,
@@ -13,9 +15,13 @@ import {
 } from './wallet';
 
 /**
- * The wallet, on screen: a card per imported ticket inside the Tickets sheet,
- * and a full-screen viewer built for one moment only — standing at the gate,
- * at night, holding the phone out to someone with a scanner.
+ * The wallet, on screen: its own sheet off the bottom bar, a card per imported
+ * ticket, and a full-screen viewer built for one moment only — standing at the
+ * gate, at night, holding the phone out to someone with a scanner.
+ *
+ * This app is for people who are going, so the wallet is the ticket surface:
+ * the ticket you bought, and — for anyone who hasn't yet — the shop's own link.
+ * What a night costs is eventbook.ro's business, not this app's.
  */
 
 const el = <K extends keyof HTMLElementTagNameMap>(
@@ -61,22 +67,107 @@ function shortDate(ms: number): string {
   return new Date(ms).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
 }
 
-/**
- * `repaint` is the ticket sheet's own repaint — importing or removing a ticket
- * changes what the nights below cost, so the whole panel is redrawn.
- */
-export function renderWallet(repaint: () => void): HTMLElement {
-  const wrap = el('section', 'wallet');
+/* ---------- the sheet ---------- */
 
-  const head = el('div', 'wallet-head');
-  head.appendChild(el('h3', 'wallet-title', 'My tickets'));
+let sheet: HTMLDialogElement | null = null;
+
+/**
+ * What the bottom bar's ticket button does. At the gate there is one thing you
+ * want and no patience for a menu, so a single un-swapped ticket goes straight
+ * to full screen. Everything else — nothing imported yet, several tickets, or a
+ * ticket already traded for a wristband — opens the sheet, where there is a
+ * choice to make.
+ */
+export function openWallet(): void {
+  const live = walletTickets().filter((t) => t.wristbandAt == null);
+  if (live.length === 1) openTicketViewer(live[0].id);
+  else openWalletSheet();
+}
+
+/** The wallet itself: every ticket on the device, and where to buy one. */
+export function openWalletSheet(): void {
+  if (!sheet) sheet = buildSheet();
+  paintSheet();
+  if (typeof sheet.showModal === 'function') sheet.showModal();
+  else sheet.setAttribute('open', '');
+  // The wallet is read from IndexedDB, so it may land a moment after the sheet
+  // opens; the subscription below repaints it in place when it does.
+  void loadWallet();
+}
+
+function buildSheet(): HTMLDialogElement {
+  const d = document.createElement('dialog');
+  d.className = 'sheet wallet-sheet';
+  d.setAttribute('aria-label', 'My ticket');
+
+  const card = el('div', 'sheet-card');
+
+  const head = el('div', 'sheet-head');
+  head.appendChild(el('h2', 'sheet-title', '🎫 My ticket'));
+  const close = el('button', 'sheet-close', '✕');
+  close.type = 'button';
+  close.setAttribute('aria-label', 'Close my ticket');
+  close.addEventListener('click', () => d.close());
+  head.appendChild(close);
+  card.appendChild(head);
+
+  card.appendChild(
+    el('p', 'sheet-sub', 'The ticket you bought, on this device — ready at the gate.'),
+  );
+
+  const body = el('div', 'sheet-body');
+  body.id = 'wallet-body';
+  card.appendChild(body);
+
+  d.appendChild(card);
+  d.addEventListener('click', (e) => {
+    if (e.target === d) d.close();
+  });
+  document.body.appendChild(d);
+
+  subscribeWallet(() => {
+    if (d.open) paintSheet();
+  });
+
+  return d;
+}
+
+function paintSheet(): void {
+  const body = sheet?.querySelector('#wallet-body');
+  if (!body) return;
+  body.innerHTML = '';
+
+  const held = walletTickets().length > 0;
+  body.appendChild(renderWallet(paintSheet));
+
+  // Not everyone opening this has bought yet, and nobody wants a price table
+  // from a fan app — the shop is one line away and it is the source of truth.
+  const buy = el(
+    'a',
+    held ? 'ticket-buy is-secondary' : 'ticket-buy',
+    held ? '🎟 Another night — buy on eventbook.ro' : '🎟 Buy a ticket on eventbook.ro',
+  );
+  buy.href = FESTIVAL.ticketsUrl;
+  buy.target = '_blank';
+  buy.rel = 'noopener noreferrer';
+  body.appendChild(buy);
+
+  body.appendChild(
+    el(
+      'p',
+      'sheet-hint',
+      'Tickets are sold on eventbook.ro — prices, nights and fees are theirs to state. This app only carries the ticket you already have, and it never leaves the device.',
+    ),
+  );
+}
+
+/**
+ * `repaint` is the sheet's own repaint — importing or removing a ticket changes
+ * what the rest of the sheet says, so the whole panel is redrawn.
+ */
+function renderWallet(repaint: () => void): HTMLElement {
+  const wrap = el('section', 'wallet');
   const tickets = walletTickets();
-  if (tickets.length > 0) {
-    head.appendChild(
-      el('span', 'wallet-count', `${tickets.length} on this device`),
-    );
-  }
-  wrap.appendChild(head);
 
   if (tickets.length === 0) {
     wrap.appendChild(
@@ -87,6 +178,12 @@ export function renderWallet(repaint: () => void): HTMLElement {
       ),
     );
   } else {
+    const head = el('div', 'wallet-head');
+    head.appendChild(
+      el('span', 'wallet-count', `${tickets.length} on this device`),
+    );
+    wrap.appendChild(head);
+
     const list = el('ul', 'wallet-list');
     for (const ticket of tickets) list.appendChild(renderCard(ticket, repaint));
     wrap.appendChild(list);
@@ -369,4 +466,14 @@ function paintViewer(d: HTMLDialogElement, ticket: WalletTicket): void {
       'Turn your screen brightness up before you reach the gate — tap the ticket to zoom. This page stays awake while it is open.',
     ),
   );
+
+  // With one ticket in the wallet the bottom bar comes straight here, so this
+  // is the only way back to the sheet — where tickets are added and fixed.
+  const manage = el('button', 'ticket-viewer-manage', 'All my tickets');
+  manage.type = 'button';
+  manage.addEventListener('click', () => {
+    d.close();
+    openWalletSheet();
+  });
+  body.appendChild(manage);
 }

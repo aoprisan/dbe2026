@@ -21,10 +21,11 @@ Poarta 7 by Ryma — the RYMA spaces in the Alba Iulia citadel, Romania — from
 - Calendar export and optional local reminders
 - One-tap directions to the venue in Google Maps
 - Festival-hour weather from Open-Meteo
-- Ticket prices and estimated plan cost
-- Your own ticket — the festival pass or a single night, imported from the
-  shop's PDF or a photo, kept on the device, shown full screen at the gate, and
-  marked once it becomes a wristband
+- Your own ticket, one tap from the bottom bar — the festival pass or a single
+  night, imported from the shop's PDF or a photo, kept on the device, shown full
+  screen at the gate, and marked once it becomes a wristband
+- A link out to eventbook.ro for anyone who hasn't bought yet; prices and fees
+  are the shop's to state, not this app's
 - A post-show journal, ratings, statistics, and recap image
 - Offline support and installation as a Progressive Web App
 
@@ -64,7 +65,7 @@ npm run preview
 
 ## Festival data
 
-The core festival details, nights, prices, and set times live in
+The core festival details, nights, and set times live in
 [`src/data.ts`](src/data.ts). Band genres, countries, and curated listening links
 live in [`src/band-meta.ts`](src/band-meta.ts).
 

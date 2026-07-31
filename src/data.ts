@@ -101,16 +101,17 @@ export const NIGHTS: Record<NightId, Night> = {
 };
 
 /**
- * Transcribed from the official Dark Bombastic Evening 12 posters (line-up and
- * day-ticket prices). Bands are listed in poster order; times are provisional
- * — see RUNNING_ORDER_ANNOUNCED above.
+ * Transcribed from the official Dark Bombastic Evening 12 line-up posters.
+ * Bands are listed in poster order; times are provisional — see
+ * RUNNING_ORDER_ANNOUNCED above. What a night costs is deliberately not here:
+ * eventbook.ro sells the tickets and states the prices, and this app is for
+ * people who already hold one.
  */
 export const DAYS: FestivalDay[] = [
   {
     id: 'ceremony',
     label: 'Ceremony',
     date: '2026-08-12',
-    price: null, // "soon" on the ticket poster
     sets: [
       {
         band: 'HAMLET',
@@ -127,7 +128,6 @@ export const DAYS: FestivalDay[] = [
     id: 'thu',
     label: 'Night II',
     date: '2026-08-13',
-    price: 350,
     sets: [
       { band: 'Årabrot', start: '19:00', end: '19:50', tba: true },
       { band: 'Evoken', start: '20:15', end: '21:05', tba: true },
@@ -139,7 +139,6 @@ export const DAYS: FestivalDay[] = [
     id: 'fri',
     label: 'Night III',
     date: '2026-08-14',
-    price: 375,
     sets: [
       { band: 'Pothamus', start: '19:00', end: '19:50', tba: true },
       { band: 'Heretoir', start: '20:15', end: '21:05', tba: true },
@@ -151,7 +150,6 @@ export const DAYS: FestivalDay[] = [
     id: 'sat',
     label: 'Night IV',
     date: '2026-08-15',
-    price: 400,
     sets: [
       { band: 'Opia', start: '19:00', end: '19:50', tba: true },
       { band: 'Skuggsjá', start: '20:15', end: '21:05', tba: true },
@@ -160,8 +158,3 @@ export const DAYS: FestivalDay[] = [
     ],
   },
 ];
-
-/** Nights that carry a published day-ticket price. */
-export function pricedDays(): FestivalDay[] {
-  return DAYS.filter((d) => d.price != null);
-}

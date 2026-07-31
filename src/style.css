@@ -504,9 +504,19 @@ body {
   opacity: 0.75;
   cursor: progress;
 }
-.btn-tickets {
+/* The ticket button leads the bar, and lights up once it has something. */
+.btn-ticket {
   color: var(--text);
-  border-color: color-mix(in srgb, var(--sat) 45%, var(--line));
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--line));
+}
+.btn-ticket.has-ticket {
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 70%, var(--line));
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  font-weight: 600;
+}
+.btn-ticket.has-ticket:active {
+  background: color-mix(in srgb, var(--accent) 26%, transparent);
 }
 .share-menu-wrap {
   position: relative;
@@ -779,14 +789,15 @@ body {
   padding: 4px 8px;
   white-space: nowrap;
 }
-.night-price {
+.night-add-ticket {
   color: var(--accent);
   border-color: color-mix(in srgb, var(--accent) 45%, var(--line));
+  border-style: dashed;
   cursor: pointer;
   font-family: var(--font-mono);
   font-weight: 600;
 }
-.night-price:hover {
+.night-add-ticket:hover {
   background: color-mix(in srgb, var(--accent) 12%, var(--panel));
 }
 
@@ -1563,135 +1574,7 @@ body {
   color: var(--c, var(--text));
 }
 
-/* ---------- tickets ---------- */
-.ticket-list {
-  list-style: none;
-  margin: 0 0 14px;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-.ticket-row {
-  padding: 10px 12px;
-  border: 1px solid var(--line);
-  border-left: 3px solid var(--line-strong);
-  border-radius: var(--radius);
-  background: var(--panel);
-}
-.ticket-row.is-chosen {
-  border-left-color: var(--accent);
-  background: color-mix(in srgb, var(--accent) 7%, var(--panel));
-}
-.ticket-row-top {
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
-}
-.ticket-night {
-  font-family: var(--font-display);
-  font-size: 1rem;
-  font-weight: 600;
-}
-.ticket-date {
-  font-family: var(--font-mono);
-  font-size: 0.62rem;
-  color: var(--muted);
-}
-.ticket-price {
-  margin-left: auto;
-  font-family: var(--font-mono);
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: var(--accent);
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-}
-.ticket-price.is-tba {
-  color: var(--muted);
-  font-style: italic;
-}
-.ticket-meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 5px;
-  margin-top: 8px;
-}
-.ticket-chip {
-  font-family: var(--font-mono);
-  font-size: 0.6rem;
-  color: var(--muted);
-  border: 1px solid var(--line);
-  background: var(--panel-2);
-  border-radius: 2px;
-  padding: 3px 7px;
-  white-space: nowrap;
-}
-.ticket-chip.is-quiet {
-  opacity: 0.6;
-  font-style: italic;
-}
-.ticket-total {
-  padding: 12px 14px;
-  border: 1px solid color-mix(in srgb, var(--accent) 40%, var(--line));
-  border-radius: var(--radius);
-  background: color-mix(in srgb, var(--accent) 6%, var(--panel));
-}
-.ticket-total-head {
-  margin: 0;
-  font-size: 0.6rem;
-  font-weight: 700;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: var(--muted);
-}
-.ticket-total-sum {
-  margin: 6px 0 0;
-  font-family: var(--font-display);
-  font-size: 1.6rem;
-  font-weight: 600;
-  color: var(--accent);
-  line-height: 1.1;
-}
-.ticket-total-note {
-  margin: 6px 0 0;
-  font-size: 0.72rem;
-  color: var(--muted);
-  line-height: 1.5;
-}
-.ticket-upsell-head {
-  margin: 14px 0 6px;
-  font-size: 0.6rem;
-  font-weight: 700;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: var(--muted);
-}
-.ticket-upsell {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-.ticket-upsell-item {
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
-  font-size: 0.78rem;
-}
-.ticket-upsell-night {
-  font-family: var(--font-display);
-  font-weight: 600;
-}
-.ticket-upsell-cost {
-  margin-left: auto;
-  font-family: var(--font-mono);
-  font-size: 0.68rem;
-  color: var(--muted);
-  white-space: nowrap;
-}
+/* ---------- the ticket you bought ---------- */
 .ticket-buy {
   display: block;
   margin-top: 14px;
@@ -1709,12 +1592,23 @@ body {
 .ticket-buy:hover {
   filter: brightness(1.08);
 }
+/* Once a ticket is in the wallet the shop is a footnote, not the headline. */
+.ticket-buy.is-secondary {
+  background: none;
+  border-color: var(--line);
+  color: var(--muted);
+  font-weight: 600;
+  font-size: 0.8rem;
+}
+.ticket-buy.is-secondary:hover {
+  filter: none;
+  color: var(--text);
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--line));
+}
 
 /* ---------- wallet: the ticket you actually bought ---------- */
 .wallet {
-  margin-bottom: 16px;
-  padding-bottom: 14px;
-  border-bottom: 1px solid var(--line);
+  margin-bottom: 14px;
 }
 .wallet-head {
   display: flex;
@@ -1722,16 +1616,11 @@ body {
   gap: 8px;
   margin-bottom: 8px;
 }
-.wallet-title {
-  margin: 0;
-  font-family: var(--font-display);
-  font-size: 0.95rem;
-  font-weight: 600;
-}
 .wallet-count {
-  margin-left: auto;
   font-family: var(--font-mono);
   font-size: 0.6rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
   color: var(--muted);
 }
 .wallet-empty {
@@ -1758,9 +1647,9 @@ body {
 .wallet-open {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   width: 100%;
-  padding: 10px;
+  padding: 12px;
   border: 0;
   background: none;
   color: inherit;
@@ -1773,8 +1662,8 @@ body {
 }
 .wallet-thumb {
   flex: none;
-  width: 46px;
-  height: 62px;
+  width: 62px;
+  height: 84px;
   border-radius: 2px;
   border: 1px solid var(--line);
   background: #fff;
@@ -1796,7 +1685,7 @@ body {
 }
 .wallet-card-night {
   font-family: var(--font-display);
-  font-size: 0.92rem;
+  font-size: 1.05rem;
   font-weight: 600;
   color: var(--c, var(--text));
 }
@@ -1816,9 +1705,14 @@ body {
   opacity: 0.8;
 }
 .wallet-card-cta {
-  margin-top: 3px;
+  align-self: flex-start;
+  margin-top: 6px;
+  padding: 5px 10px;
+  border: 1px solid color-mix(in srgb, var(--accent) 55%, var(--line));
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
   font-family: var(--font-mono);
-  font-size: 0.58rem;
+  font-size: 0.6rem;
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--accent);
@@ -1830,6 +1724,8 @@ body {
   opacity: 0.55;
 }
 .wallet-card-cta.is-quiet {
+  border-color: var(--line);
+  background: none;
   color: var(--muted);
   letter-spacing: 0.08em;
   text-transform: none;
@@ -1895,7 +1791,7 @@ body {
   display: none;
 }
 .wallet-add {
-  padding: 11px 14px;
+  padding: 14px;
   border: 1px dashed color-mix(in srgb, var(--accent) 45%, var(--line));
   border-radius: var(--radius);
   background: color-mix(in srgb, var(--accent) 6%, var(--panel));
@@ -1923,17 +1819,6 @@ body {
 }
 .wallet-status.is-error {
   color: var(--danger);
-}
-.ticket-row.is-held {
-  border-left-color: var(--ok);
-}
-button.ticket-chip {
-  cursor: pointer;
-  font-family: var(--font-mono);
-}
-.ticket-chip.is-held {
-  color: var(--ok);
-  border-color: color-mix(in srgb, var(--ok) 45%, var(--line));
 }
 .night-chip.night-ticket {
   color: var(--ok);
@@ -2051,6 +1936,18 @@ button.ticket-chip {
   width: 250%;
   max-width: none;
   cursor: zoom-out;
+}
+.ticket-viewer-manage {
+  display: block;
+  margin: 4px auto 24px;
+  padding: 8px 14px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  background: none;
+  color: #555;
+  font-family: inherit;
+  font-size: 0.8rem;
+  cursor: pointer;
 }
 .ticket-viewer-hint {
   margin: 0;
