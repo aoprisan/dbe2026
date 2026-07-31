@@ -4,9 +4,11 @@ import type { NightId } from './types';
 import {
   importTicketFile,
   removeTicket,
-  setTicketNight,
+  setTicketScope,
+  setWristband,
   TicketImportError,
   walletTickets,
+  type TicketScope,
   type WalletTicket,
 } from './wallet';
 
@@ -48,6 +50,17 @@ function dayLabel(id: NightId): string {
   return `${day.label} · ${date}`;
 }
 
+const PASS_LABEL = 'Full festival pass';
+
+function scopeLabel(scope: TicketScope | null): string {
+  if (scope === 'full') return PASS_LABEL;
+  return scope ? dayLabel(scope) : 'Pass, or a single night?';
+}
+
+function shortDate(ms: number): string {
+  return new Date(ms).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+}
+
 /**
  * `repaint` is the ticket sheet's own repaint — importing or removing a ticket
  * changes what the nights below cost, so the whole panel is redrawn.
@@ -70,7 +83,7 @@ export function renderWallet(repaint: () => void): HTMLElement {
       el(
         'p',
         'wallet-empty',
-        'Import the ticket you bought — the PDF from the shop, or a photo or screenshot of it — and it opens here, full screen, ready to scan. It never leaves this device.',
+        'Import the ticket you bought — the festival pass or a single night, as the PDF from the shop or a photo of it — and it opens here, full screen, ready to scan. It never leaves this device.',
       ),
     );
   } else {
@@ -140,14 +153,15 @@ function renderImporter(repaint: () => void, compact: boolean): HTMLElement {
 
 function renderCard(ticket: WalletTicket, repaint: () => void): HTMLElement {
   const li = el('li', 'wallet-card');
-  if (ticket.nightId) li.style.setProperty('--c', NIGHTS[ticket.nightId].color);
+  if (ticket.scope && ticket.scope !== 'full') {
+    li.style.setProperty('--c', NIGHTS[ticket.scope].color);
+  }
+  const swapped = ticket.wristbandAt != null;
+  if (swapped) li.classList.add('is-swapped');
 
   const open = el('button', 'wallet-open');
   open.type = 'button';
-  open.setAttribute(
-    'aria-label',
-    `Show ${ticket.nightId ? dayLabel(ticket.nightId) : ticket.name} full screen`,
-  );
+  open.setAttribute('aria-label', `Show ${scopeLabel(ticket.scope)} full screen`);
 
   const thumb = el('span', 'wallet-thumb');
   const img = el('img') as HTMLImageElement;
@@ -159,18 +173,22 @@ function renderCard(ticket: WalletTicket, repaint: () => void): HTMLElement {
   open.appendChild(thumb);
 
   const text = el('span', 'wallet-card-text');
-  text.appendChild(
-    el('span', 'wallet-card-night', ticket.nightId ? dayLabel(ticket.nightId) : 'Which night?'),
-  );
+  text.appendChild(el('span', 'wallet-card-night', scopeLabel(ticket.scope)));
   if (ticket.code) {
     text.appendChild(el('span', 'wallet-card-code', ticket.code));
   } else {
     text.appendChild(el('span', 'wallet-card-name', ticket.name));
   }
-  if (ticket.guessed && ticket.nightId) {
+  if (ticket.guessed && ticket.scope) {
     text.appendChild(el('span', 'wallet-card-hint', 'read off the ticket — fix it if it is wrong'));
   }
-  text.appendChild(el('span', 'wallet-card-cta', 'Tap to show'));
+  text.appendChild(
+    el(
+      'span',
+      swapped ? 'wallet-card-cta is-quiet' : 'wallet-card-cta',
+      swapped ? `🎗 wristband since ${shortDate(ticket.wristbandAt!)}` : 'Tap to show',
+    ),
+  );
   open.appendChild(text);
 
   open.addEventListener('click', () => openTicketViewer(ticket.id));
@@ -178,21 +196,40 @@ function renderCard(ticket: WalletTicket, repaint: () => void): HTMLElement {
 
   const tools = el('div', 'wallet-card-tools');
 
+  // Most people buy the pass, so it leads the list — and picking it is what
+  // strikes all four nights off the bill below.
   const select = el('select', 'wallet-night') as HTMLSelectElement;
-  select.setAttribute('aria-label', 'Which night this ticket admits you to');
-  const none = el('option', undefined, 'Night not set') as HTMLOptionElement;
+  select.setAttribute('aria-label', 'What this ticket admits you to');
+  const none = el('option', undefined, 'Not set') as HTMLOptionElement;
   none.value = '';
   select.appendChild(none);
+  const pass = el('option', undefined, `${PASS_LABEL} · all four nights`) as HTMLOptionElement;
+  pass.value = 'full';
+  select.appendChild(pass);
   for (const day of DAYS) {
     const option = el('option', undefined, dayLabel(day.id)) as HTMLOptionElement;
     option.value = day.id;
     select.appendChild(option);
   }
-  select.value = ticket.nightId ?? '';
+  select.value = ticket.scope ?? '';
   select.addEventListener('change', () => {
-    void setTicketNight(ticket.id, (select.value || null) as NightId | null).then(repaint);
+    void setTicketScope(ticket.id, (select.value || null) as TicketScope | null).then(repaint);
   });
   tools.appendChild(select);
+
+  // The gate keeps the scan and gives you a wristband; from then on the ticket
+  // is a receipt. Marking it here is what quiets the app down.
+  const band = el('button', 'wallet-band', swapped ? '🎗 Wristband on' : '🎗 Got my wristband');
+  band.type = 'button';
+  band.classList.toggle('is-on', swapped);
+  band.setAttribute('aria-pressed', String(swapped));
+  band.title = swapped
+    ? 'Scanned at the gate and swapped for a wristband — tap to undo'
+    : 'Mark this ticket as scanned and exchanged for a wristband';
+  band.addEventListener('click', () => {
+    void setWristband(ticket.id, !swapped).then(repaint);
+  });
+  tools.appendChild(band);
 
   const remove = el('button', 'wallet-remove', 'Remove');
   remove.type = 'button';
@@ -274,10 +311,17 @@ function paintViewer(d: HTMLDialogElement, ticket: WalletTicket): void {
   body.innerHTML = '';
 
   const head = el('div', 'ticket-viewer-head');
-  head.appendChild(
-    el('span', 'ticket-viewer-night', ticket.nightId ? dayLabel(ticket.nightId) : ticket.name),
-  );
+  head.appendChild(el('span', 'ticket-viewer-night', scopeLabel(ticket.scope)));
   if (ticket.code) head.appendChild(el('span', 'ticket-viewer-code', ticket.code));
+  if (ticket.wristbandAt != null) {
+    head.appendChild(
+      el(
+        'span',
+        'ticket-viewer-swapped',
+        `🎗 Swapped for a wristband on ${shortDate(ticket.wristbandAt)} — the band gets you in now.`,
+      ),
+    );
+  }
   body.appendChild(head);
 
   // A ticket PDF is A4: scaled to a phone, its QR ends up a centimetre across.
@@ -306,6 +350,17 @@ function paintViewer(d: HTMLDialogElement, ticket: WalletTicket): void {
     frame.appendChild(img);
     body.appendChild(frame);
   });
+
+  // The moment after the scanner beeps is the only moment anyone will ever
+  // remember to tap this, so the button lives here, under the ticket.
+  if (ticket.wristbandAt == null) {
+    const done = el('button', 'ticket-viewer-band', '🎗 Scanned — I got my wristband');
+    done.type = 'button';
+    done.addEventListener('click', () => {
+      void setWristband(ticket.id, true).then(() => d.close());
+    });
+    body.appendChild(done);
+  }
 
   body.appendChild(
     el(

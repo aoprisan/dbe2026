@@ -3,7 +3,7 @@ import type { FestivalDay } from './types';
 import { fmtDuration, getSlot } from './schedule';
 import { unionMinutes } from './stats';
 import { selection } from './store';
-import { heldNights, loadWallet, subscribeWallet, ticketsForNight } from './wallet';
+import { hasFullPass, heldNights, loadWallet, subscribeWallet, ticketsForNight } from './wallet';
 import { openTicketViewer, renderWallet } from './wallet-ui';
 
 /**
@@ -217,10 +217,20 @@ function renderNightList(costs: NightCost[]): HTMLElement {
 
     const meta = el('div', 'ticket-meta');
     if (c.held) {
-      const show = el('button', 'ticket-chip is-held', '🎫 ticket imported — show it');
+      const covering = ticketsForNight(c.day.id);
+      const ticket = covering.find((t) => t.wristbandAt == null) ?? covering[0];
+      const swapped = ticket.wristbandAt != null;
+      const show = el(
+        'button',
+        'ticket-chip is-held',
+        swapped
+          ? '🎗 wristband — show the ticket'
+          : ticket.scope === 'full'
+            ? '🎫 covered by your pass — show it'
+            : '🎫 ticket imported — show it',
+      );
       show.type = 'button';
-      const [first] = ticketsForNight(c.day.id);
-      show.addEventListener('click', () => openTicketViewer(first.id));
+      show.addEventListener('click', () => openTicketViewer(ticket.id));
       meta.appendChild(show);
     }
     meta.appendChild(
@@ -252,7 +262,9 @@ function renderTotals(t: TicketTotals): HTMLElement {
       el(
         'p',
         'sheet-empty',
-        'Pick a few acts and this works out which nights you actually need a ticket for — and what they come to.',
+        hasFullPass()
+          ? 'Your pass covers all four nights — nothing left to buy. Pick the acts you want to be standing there for.'
+          : 'Pick a few acts and this works out which nights you actually need a ticket for — and what they come to.',
       ),
     );
     return wrap;
@@ -278,7 +290,9 @@ function renderTotals(t: TicketTotals): HTMLElement {
       el(
         'p',
         'ticket-total-note',
-        `🎫 Ticket in your wallet for ${t.covered.map((c) => c.day.label).join(' · ')}.`,
+        hasFullPass()
+          ? '🎫 Your festival pass covers every night of the bill.'
+          : `🎫 Ticket in your wallet for ${t.covered.map((c) => c.day.label).join(' · ')}.`,
       ),
     );
   }

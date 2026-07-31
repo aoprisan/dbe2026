@@ -706,10 +706,17 @@ function renderNightHead(day: FestivalDay): HTMLElement {
   // want from this header at the gate is the ticket itself, one tap away.
   const held = ticketsForNight(day.id);
   if (held.length > 0) {
-    const show = el('button', 'night-chip night-ticket', '🎫 My ticket');
+    // Once the ticket has been swapped at the gate the wristband is what admits
+    // you, so the chip says so — and still opens the ticket, for the receipt.
+    const ticket = held.find((t) => t.wristbandAt == null) ?? held[0];
+    const swapped = ticket.wristbandAt != null;
+    const show = el('button', 'night-chip night-ticket', swapped ? '🎗 Wristband' : '🎫 My ticket');
+    if (swapped) show.classList.add('is-swapped');
     show.type = 'button';
-    show.title = 'Show your ticket for this night, full screen';
-    show.addEventListener('click', () => openTicketViewer(held[0].id));
+    show.title = swapped
+      ? 'You swapped this for a wristband — tap to see the ticket anyway'
+      : 'Show your ticket for this night, full screen';
+    show.addEventListener('click', () => openTicketViewer(ticket.id));
     right.appendChild(show);
   }
 

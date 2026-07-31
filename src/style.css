@@ -1823,14 +1823,45 @@ body {
   text-transform: uppercase;
   color: var(--accent);
 }
+.wallet-card.is-swapped {
+  border-left-color: var(--line-strong);
+}
+.wallet-card.is-swapped .wallet-thumb {
+  opacity: 0.55;
+}
+.wallet-card-cta.is-quiet {
+  color: var(--muted);
+  letter-spacing: 0.08em;
+  text-transform: none;
+}
 .wallet-card-tools {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   padding: 0 10px 10px;
 }
+.wallet-band {
+  flex: none;
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: none;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  cursor: pointer;
+}
+.wallet-band:hover {
+  color: var(--text);
+}
+.wallet-band.is-on {
+  color: var(--ok);
+  border-color: color-mix(in srgb, var(--ok) 45%, var(--line));
+  background: color-mix(in srgb, var(--ok) 8%, transparent);
+}
 .wallet-night {
-  flex: 1;
+  flex: 1 1 100%;
   min-width: 0;
   padding: 6px 8px;
   border: 1px solid var(--line);
@@ -1909,6 +1940,10 @@ button.ticket-chip {
   border-color: color-mix(in srgb, var(--ok) 45%, var(--line));
   cursor: pointer;
 }
+.night-chip.night-ticket.is-swapped {
+  color: var(--muted);
+  border-color: var(--line);
+}
 
 /* The gate view: white paper, black ink, and nothing else on the screen. */
 .ticket-viewer {
@@ -1967,6 +2002,26 @@ button.ticket-chip {
   font-size: 0.72rem;
   color: #555;
   word-break: break-all;
+}
+.ticket-viewer-swapped {
+  max-width: 32ch;
+  font-size: 0.72rem;
+  line-height: 1.45;
+  color: #6b7f6b;
+}
+.ticket-viewer-band {
+  padding: 12px 18px;
+  border: 1px solid #cfd8cf;
+  border-radius: 4px;
+  background: #f3f7f3;
+  color: #2f5d3a;
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.ticket-viewer-band:hover {
+  background: #e8f0e8;
 }
 .ticket-viewer-qr {
   width: min(78vw, 380px);

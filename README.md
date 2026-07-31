@@ -22,8 +22,9 @@ Poarta 7 by Ryma — the RYMA spaces in the Alba Iulia citadel, Romania — from
 - One-tap directions to the venue in Google Maps
 - Festival-hour weather from Open-Meteo
 - Ticket prices and estimated plan cost
-- Your own ticket — imported from the shop's PDF or a photo, kept on the device,
-  and shown full screen at the gate
+- Your own ticket — the festival pass or a single night, imported from the
+  shop's PDF or a photo, kept on the device, shown full screen at the gate, and
+  marked once it becomes a wristband
 - A post-show journal, ratings, statistics, and recap image
 - Offline support and installation as a Progressive Web App
 

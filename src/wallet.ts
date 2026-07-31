@@ -22,16 +22,29 @@ const MAX_PAGES = 4;
 /** Rendered page width in device pixels — sharp enough for a gate scanner. */
 const PAGE_WIDTH = 1400;
 
+/**
+ * What a ticket admits you to. Most people buy the pass — DBE sells the four
+ * nights as one — so "full" is a first-class answer here, not four day tickets
+ * bolted together.
+ */
+export type TicketScope = 'full' | NightId;
+
 export interface WalletTicket {
   id: string;
   /** Original file name, kept as the human label for the card. */
   name: string;
   kind: 'pdf' | 'image';
   addedAt: number;
-  /** Which night it admits. Guessed at import, always user-correctable. */
-  nightId: NightId | null;
-  /** True while `nightId` is the app's guess and not the user's own choice. */
+  /** The pass, or the single night. Guessed at import, always correctable. */
+  scope: TicketScope | null;
+  /** True while `scope` is the app's guess and not the user's own choice. */
   guessed: boolean;
+  /**
+   * When this ticket was swapped for a wristband at the gate. From that moment
+   * the wristband is what gets you in and the ticket is only a receipt — the
+   * app stops pushing it at you, but keeps it, because queues have disputes.
+   */
+  wristbandAt: number | null;
   /** The QR / barcode payload, when this device could read one. */
   code: string | null;
   /**
@@ -102,7 +115,7 @@ export async function loadWallet(): Promise<void> {
   if (hydrated) return;
   try {
     const all = await withStore<WalletTicket[]>('readonly', (s) => s.getAll());
-    tickets = all.sort((a, b) => a.addedAt - b.addedAt);
+    tickets = all.map(normalise).sort((a, b) => a.addedAt - b.addedAt);
   } catch {
     tickets = []; // private mode, blocked storage, corrupted db — go on without
   }
@@ -110,35 +123,59 @@ export async function loadWallet(): Promise<void> {
   notify();
 }
 
+/** Fill in fields written by an older build of the wallet. */
+function normalise(ticket: WalletTicket): WalletTicket {
+  const legacy = ticket as WalletTicket & { nightId?: NightId | null };
+  if (ticket.scope == null && legacy.nightId) ticket.scope = legacy.nightId;
+  if (ticket.wristbandAt === undefined) ticket.wristbandAt = null;
+  return ticket;
+}
+
 export function walletTickets(): WalletTicket[] {
   return tickets;
 }
 
-export function walletCount(): number {
-  return tickets.length;
-}
-
-/** Nights a stored ticket admits you to — used to strike them off the bill. */
+/** Every night the tickets on this device cover — a pass covers all of them. */
 export function heldNights(): Set<NightId> {
   const held = new Set<NightId>();
-  for (const t of tickets) if (t.nightId) held.add(t.nightId);
+  for (const t of tickets) {
+    if (t.scope === 'full') for (const day of DAYS) held.add(day.id);
+    else if (t.scope) held.add(t.scope);
+  }
   return held;
 }
 
+/** True once a pass is in the wallet — the whole run is paid for. */
+export function hasFullPass(): boolean {
+  return tickets.some((t) => t.scope === 'full');
+}
+
 export function ticketsForNight(id: NightId): WalletTicket[] {
-  return tickets.filter((t) => t.nightId === id);
+  return tickets.filter((t) => t.scope === id || t.scope === 'full');
 }
 
 async function put(ticket: WalletTicket): Promise<void> {
   await withStore('readwrite', (s) => s.put(ticket));
 }
 
-/** Point a ticket at a night (or at none), overriding the import-time guess. */
-export async function setTicketNight(id: string, nightId: NightId | null): Promise<void> {
+/** Point a ticket at the pass or a single night, overriding the guess. */
+export async function setTicketScope(id: string, scope: TicketScope | null): Promise<void> {
   const ticket = tickets.find((t) => t.id === id);
   if (!ticket) return;
-  ticket.nightId = nightId;
+  ticket.scope = scope;
   ticket.guessed = false;
+  await put(ticket);
+  notify();
+}
+
+/**
+ * Mark the ticket as exchanged at the gate — or un-mark it, for the tap that
+ * happened in a pocket.
+ */
+export async function setWristband(id: string, on: boolean): Promise<void> {
+  const ticket = tickets.find((t) => t.id === id);
+  if (!ticket) return;
+  ticket.wristbandAt = on ? Date.now() : null;
   await put(ticket);
   notify();
 }
@@ -191,18 +228,19 @@ export async function importTicketFile(file: File): Promise<WalletTicket> {
   if (pages.length === 0) throw new TicketImportError('That file had no pages in it.');
 
   const read = await readCode(pages[0]);
+  const scope = guessScope(`${text}\n${file.name}`);
   const ticket: WalletTicket = {
     id: newId(),
     name: file.name || 'Ticket',
     kind: isPdf ? 'pdf' : 'image',
     addedAt: Date.now(),
-    nightId: guessNight(`${text}\n${file.name}`),
-    guessed: true,
+    scope,
+    guessed: scope != null,
+    wristbandAt: null,
     code: read?.value ?? null,
     codeFormat: read?.format ?? null,
     pages,
   };
-  ticket.guessed = ticket.nightId != null;
 
   try {
     await put(ticket);
@@ -314,19 +352,28 @@ async function readCode(page: Blob): Promise<{ value: string; format: string | n
   }
 }
 
-/* ---------- which night is this for? ---------- */
+/* ---------- pass, or which night? ---------- */
 
 /**
- * Ticket shops write the date, not the night, so the night is read back out of
- * the PDF's text — and only when exactly one night matches. A full-run pass
- * ("12–15 August") or an unreadable ticket leaves it unset rather than wrong,
- * and the card says the guess is a guess.
+ * What did you buy? Ticket shops write dates and Romanian shop-speak, not
+ * "Night III", so it is read back out of the PDF's text:
+ *
+ * - an abonament / full pass / "4 zile" says so outright;
+ * - a ticket naming the whole run, or more than one of its days, is a pass;
+ * - exactly one date, or "ziua 2", is that one night;
+ * - anything else stays unset rather than wrong, and the card says so.
  */
-export function guessNight(text: string): NightId | null {
+export function guessScope(text: string): TicketScope | null {
   const norm = text.toLowerCase().replace(/\s+/g, ' ');
 
-  // A date range covers the whole festival — that names no single night.
-  if (/1[2-5]\s*[-–—]\s*1[2-5]/.test(norm)) return null;
+  if (/\babonament|full[ -]?(?:festival )?pass|festival pass|4 (?:zile|days)|toate zilele|all (?:four )?(?:days|nights)\b/.test(norm)) {
+    return 'full';
+  }
+
+  // "12-15 august": a compact range names the run, and would otherwise read as
+  // its own end date, so it is taken out before the single dates are counted.
+  const compactRange = /1[2-5]\s*[-–—]\s*1[2-5]/.test(norm);
+  const singles = norm.replace(/1[2-5]\s*[-–—]\s*1[2-5]/g, ' ');
 
   const hits = new Set<NightId>();
   for (const day of DAYS) {
@@ -343,12 +390,14 @@ export function guessNight(text: string): NightId | null {
       `${dd} august`,
       `${dd} aug`,
     ];
-    if (stamps.some((s) => norm.includes(s))) hits.add(day.id);
+    if (stamps.some((s) => singles.includes(s))) hits.add(day.id);
   }
 
   // Romanian ticket shops label the nights: "ziua 2", "day 2".
-  const numbered = norm.match(/\b(?:ziua|zi|day|night|noaptea)\s*([1-4])\b/);
+  const numbered = singles.match(/\b(?:ziua|zi|day|night|noaptea)\s*([1-4])\b/);
   if (numbered) hits.add(DAYS[Number(numbered[1]) - 1].id);
 
-  return hits.size === 1 ? [...hits][0] : null;
+  if (hits.size === 1) return [...hits][0];
+  if (hits.size > 1) return 'full'; // several days on one ticket is a pass
+  return compactRange ? 'full' : null;
 }
