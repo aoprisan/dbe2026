@@ -163,10 +163,42 @@ body {
   font-weight: 600;
 }
 
+/* The right-hand corner: the pick counters and the "?" that reopens the guide,
+   kept on one line so the masthead stays two columns at every width. */
+.header-right {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
 .header-stats {
   display: flex;
   gap: 8px;
   flex-shrink: 0;
+}
+
+/* Quiet by design — it matters once, on the first night someone opens this. */
+.header-help {
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+  margin-top: 2px;
+  border: 1px solid var(--line-strong);
+  border-radius: 50%;
+  background: var(--panel);
+  color: var(--muted);
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+.header-help:hover,
+.header-help:focus-visible {
+  color: var(--accent);
+  border-color: var(--accent);
 }
 
 .stat {
@@ -2695,6 +2727,65 @@ body {
   white-space: pre-wrap;
   word-break: break-word;
   -webkit-overflow-scrolling: touch;
+}
+
+/* ---------- the usage guide ---------- */
+/* Prose, not controls: one icon column so the eye can skim the panel for the
+   part it needs, and enough line height to actually read it on a phone. */
+.guide-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 2px;
+}
+.guide-item {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+.guide-icon {
+  flex-shrink: 0;
+  width: 26px;
+  text-align: center;
+  font-size: 1rem;
+  line-height: 1.4;
+  opacity: 0.9;
+}
+.guide-text {
+  min-width: 0;
+}
+.guide-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text);
+}
+.guide-body {
+  margin: 3px 0 0;
+  font-size: 0.76rem;
+  line-height: 1.6;
+  color: var(--muted);
+}
+/* The provisional-times warning, given the same weight it has elsewhere in the
+   app: a warm rule down the side rather than a whole coloured box. */
+.guide-caveat {
+  margin: 16px 0 0;
+  padding: 9px 11px;
+  border-left: 2px solid var(--warn);
+  border-radius: 0 var(--radius) var(--radius) 0;
+  background: color-mix(in srgb, var(--warn) 8%, transparent);
+  font-size: 0.72rem;
+  line-height: 1.55;
+  color: var(--text);
+}
+.guide-foot {
+  display: flex;
+  justify-content: center;
+  padding: 14px 0 4px;
+}
+.guide-foot .pill-btn {
+  align-self: center;
 }
 
 /* ---------- in-app reminder toasts ---------- */
