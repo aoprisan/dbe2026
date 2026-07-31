@@ -16,6 +16,7 @@ import {
   getSlot,
   minutesToLabel,
 } from './schedule';
+import { moonLabel, moonTitle, nightMoon } from './moon';
 import { renderDiscover } from './discover';
 import { openCrew, friendsForSlot, subscribeCrew, initials } from './crew';
 import {
@@ -737,6 +738,22 @@ function renderProvisionalNotice(): HTMLElement | null {
   return bar;
 }
 
+/**
+ * The moon over this night, next to its date. Four nights in an open courtyard
+ * inside a fortress: whether there is a moon up there — and how much of it —
+ * is part of what the evening will look like.
+ */
+function renderNightMoon(day: FestivalDay): HTMLElement {
+  const phase = nightMoon(day);
+  const line = el('p', 'night-moon');
+  line.title = moonTitle(phase);
+  const glyph = el('span', 'night-moon-glyph', phase.emoji);
+  glyph.setAttribute('aria-hidden', 'true');
+  line.appendChild(glyph);
+  line.appendChild(el('span', 'night-moon-text', moonLabel(phase)));
+  return line;
+}
+
 /** The night's own header: date, your ticket for it, and how much you've taken. */
 function renderNightHead(day: FestivalDay): HTMLElement {
   const head = el('div', 'night-head');
@@ -755,6 +772,7 @@ function renderNightHead(day: FestivalDay): HTMLElement {
       }),
     ),
   );
+  left.appendChild(renderNightMoon(day));
   head.appendChild(left);
 
   const right = el('div', 'night-head-right');

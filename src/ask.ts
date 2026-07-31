@@ -8,6 +8,7 @@ import {
   CHANGEOVER_MINUTES,
 } from './data';
 import { nightSlots } from './schedule';
+import { moonLabel, nightMoon } from './moon';
 import { selection } from './store';
 import { copyText } from './clipboard';
 import type { SetSlot } from './types';
@@ -141,7 +142,10 @@ export function festivalBrief(includePicks: boolean): string {
   lines.push('');
 
   for (const day of DAYS) {
-    lines.push(`${dateLabel(day.date, true)} — ${NIGHTS[day.id].name}`);
+    const moon = nightMoon(day);
+    lines.push(
+      `${dateLabel(day.date, true)} — ${NIGHTS[day.id].name}  [moon at 22:00: ${moonLabel(moon)}]`,
+    );
     for (const slot of nightSlots(day.id)) {
       lines.push(slotLine(slot));
       if (slot.note) lines.push(`      ${slot.note}`);

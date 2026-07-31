@@ -1,4 +1,5 @@
 import { DAYS, FESTIVAL } from './data';
+import { moonLabel, moonTitle, nightMoon } from './moon';
 
 // Festival site: Poarta 7 by Ryma, in the Alba Iulia citadel, Romania.
 const LAT = 46.07;
@@ -321,8 +322,14 @@ async function load(): Promise<void> {
     setNote(note, Date.now());
   } catch {
     if (!cached) {
-      body.textContent =
+      // No forecast, nothing cached — but still draw the four nights, because
+      // the moon over each of them is arithmetic and needs no network at all.
+      renderDays(body, [], []);
+      const msg = document.createElement('p');
+      msg.className = 'weather-error';
+      msg.textContent =
         'Couldn’t load the forecast. Check your connection and try again.';
+      body.prepend(msg);
       if (note) note.textContent = 'Forecast by Open-Meteo.';
     } else {
       // Keep the cached view, just flag that it may be stale.
@@ -519,6 +526,12 @@ function renderDays(body: HTMLElement, days: DailyForecast[], hours: HourForecas
     if (!hasTemp(f) && f?.precip == null && f?.wind == null) {
       meta.appendChild(chip('Forecast not available yet'));
     }
+    // The moon is the one thing on this row that needs no forecast and no
+    // signal — it is arithmetic, and it holds whatever the API can't reach.
+    const moon = nightMoon(day);
+    const moonChip = chip(`${moon.emoji} ${moonLabel(moon)}`);
+    moonChip.title = moonTitle(moon);
+    meta.appendChild(moonChip);
     info.appendChild(meta);
     row.appendChild(info);
 
