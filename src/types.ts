@@ -52,8 +52,6 @@ export interface FestivalDay {
   id: NightId;
   label: string;
   date: string; // ISO date of the day the bulk of sets start
-  /** Day-ticket price in Romanian lei, or null while it is still unannounced. */
-  price: number | null;
   sets: RawSet[];
 }
 

@@ -17,7 +17,6 @@ import {
   minutesToLabel,
 } from './schedule';
 import { renderDiscover } from './discover';
-import { openTickets, nightCosts } from './tickets';
 import { openCrew, friendsForSlot, subscribeCrew, initials } from './crew';
 import {
   selection,
@@ -48,8 +47,8 @@ import {
   unratedCount,
 } from './journal';
 import * as notify from './notify';
-import { subscribeWallet, ticketsForNight } from './wallet';
-import { openTicketViewer } from './wallet-ui';
+import { subscribeWallet, ticketsForNight, walletTickets } from './wallet';
+import { openTicketViewer, openWallet, openWalletSheet } from './wallet-ui';
 
 // Vertical scale of the running order. DBE plays one stage, so each set gets the
 // full width of the sheet and needs far less height than a three-column grid —
@@ -126,8 +125,12 @@ export function mount(root: HTMLElement): void {
   // Friend overlays ride on the running order; repaint when the crew changes.
   subscribeCrew(() => renderContent(main));
 
-  // An imported ticket puts a "show my ticket" chip on that night's header.
-  subscribeWallet(() => renderContent(main));
+  // An imported ticket puts a "show my ticket" chip on that night's header and
+  // lights the bottom bar's own ticket button.
+  subscribeWallet(() => {
+    renderContent(main);
+    updateTicketBtn();
+  });
 
   // Ratings show on the timeline, and the journal button's dot tracks them.
   subscribeJournal(() => {
@@ -147,6 +150,7 @@ export function mount(root: HTMLElement): void {
   renderContent(main);
   refreshChrome();
   updateJournalDot();
+  updateTicketBtn();
 
   // The clock ticks every second; the "now" line and "Now / Next" bar creep
   // forward on their own while the app sits open all evening.
@@ -466,10 +470,14 @@ function renderNotifyControl(): HTMLElement | null {
 function renderShareBar(): HTMLElement {
   const bar = el('div', 'share-bar');
 
-  const tickets = el('button', 'btn-ghost btn-tickets', '🎟 Tickets');
-  tickets.setAttribute('aria-label', 'Open nightly ticket prices and what your picks cost');
-  tickets.addEventListener('click', () => openTickets());
-  bar.appendChild(tickets);
+  // The ticket you bought is the one thing in this app that has to be found in
+  // the dark with a queue behind you, so it leads the bar and carries the
+  // accent. One tap is the whole design: hold a single ticket and this opens it
+  // full screen without passing through a sheet first.
+  const ticket = el('button', 'btn-ghost btn-ticket', '🎫 My ticket');
+  ticket.id = 'ticket-btn';
+  ticket.addEventListener('click', () => openWallet());
+  bar.appendChild(ticket);
 
   const weather = el('button', 'btn-ghost btn-weather', '🌙 Weather');
   weather.setAttribute('aria-label', 'Open the festival weather forecast');
@@ -591,6 +599,26 @@ async function handleCalendar(mode: 'add' | 'remove'): Promise<void> {
   }
 }
 
+/**
+ * Light the ticket button once there is a ticket behind it — an empty wallet
+ * still invites the tap, it just doesn't pretend to be holding anything.
+ */
+function updateTicketBtn(): void {
+  const btn = document.getElementById('ticket-btn');
+  if (!btn) return;
+  const tickets = walletTickets();
+  const live = tickets.filter((t) => t.wristbandAt == null);
+  btn.classList.toggle('has-ticket', tickets.length > 0);
+  btn.setAttribute(
+    'aria-label',
+    tickets.length === 0
+      ? 'Import the ticket you bought, or buy one'
+      : live.length === 1
+        ? 'Show your ticket full screen'
+        : 'Open your tickets',
+  );
+}
+
 /** Light the journal button when seen sets are still waiting on a verdict. */
 function updateJournalDot(): void {
   const btn = document.getElementById('journal-btn');
@@ -613,8 +641,9 @@ function refreshChrome(): void {
   pickBadge.appendChild(el('span', 'stat-label', picks === 1 ? 'set' : 'sets'));
   stats.appendChild(pickBadge);
 
-  // The second badge is the money question: how many nights you'd be buying.
-  const nights = nightCosts().filter((c) => c.picks > 0).length;
+  // The second badge is how much of the run you have a reason to be there for:
+  // the nights your picks land on.
+  const nights = new Set(selectedSlots().map((s) => s.dayId)).size;
   const nightBadge = el('div', nights ? 'stat stat-nights' : 'stat');
   nightBadge.appendChild(el('span', 'stat-num', String(nights)));
   nightBadge.appendChild(el('span', 'stat-label', nights === 1 ? 'night' : 'nights'));
@@ -677,7 +706,7 @@ function renderProvisionalNotice(): HTMLElement | null {
   return bar;
 }
 
-/** The night's own header: date, price, and how much of it you've taken. */
+/** The night's own header: date, your ticket for it, and how much you've taken. */
 function renderNightHead(day: FestivalDay): HTMLElement {
   const head = el('div', 'night-head');
   head.style.setProperty('--c', dayColor(day));
@@ -702,8 +731,8 @@ function renderNightHead(day: FestivalDay): HTMLElement {
   right.appendChild(
     el('span', 'night-chip', `${picked}/${day.sets.length} picked`),
   );
-  // Hold a ticket for this night and the price stops being the point: what you
-  // want from this header at the gate is the ticket itself, one tap away.
+  // What you want from this header at the gate is the ticket itself, one tap
+  // away — and, until there is one on the device, the way to put it there.
   const held = ticketsForNight(day.id);
   if (held.length > 0) {
     // Once the ticket has been swapped at the gate the wristband is what admits
@@ -718,14 +747,16 @@ function renderNightHead(day: FestivalDay): HTMLElement {
       : 'Show your ticket for this night, full screen';
     show.addEventListener('click', () => openTicketViewer(ticket.id));
     right.appendChild(show);
+  } else if (walletTickets().length === 0) {
+    // Only while the wallet is completely empty: once a ticket is on the device
+    // this stops asking, rather than nagging on every night you didn't buy.
+    const add = el('button', 'night-chip night-add-ticket', '🎫 Add your ticket');
+    add.type = 'button';
+    add.title = 'Import the ticket you bought, or buy one';
+    add.addEventListener('click', () => openWalletSheet());
+    right.appendChild(add);
   }
 
-  const price = el('button', 'night-chip night-price');
-  price.type = 'button';
-  price.textContent = day.price == null ? 'price soon' : `${day.price} lei`;
-  price.title = 'Open tickets';
-  price.addEventListener('click', () => openTickets());
-  right.appendChild(price);
   head.appendChild(right);
 
   return head;
