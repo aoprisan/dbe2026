@@ -119,7 +119,7 @@ function renderRecapPng(seen: SetSlot[]): Promise<Blob> {
   ctx.fillStyle = COLORS.muted;
   ctx.font = '600 14px "Segoe UI", system-ui, sans-serif';
   ctx.fillText(
-    truncate(ctx, `${FESTIVAL.name} · ${FESTIVAL.dates} · ${FESTIVAL.location}`, W - 2 * PAD),
+    truncate(ctx, `${FESTIVAL.name} · ${FESTIVAL.dates} · ${FESTIVAL.city}`, W - 2 * PAD),
     PAD,
     80,
   );

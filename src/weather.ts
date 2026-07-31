@@ -1,6 +1,6 @@
 import { DAYS, FESTIVAL } from './data';
 
-// Festival site: RÂMA, Alba Iulia, Romania.
+// Festival site: Poarta 7 by Ryma, in the Alba Iulia citadel, Romania.
 const LAT = 46.07;
 const LON = 23.58;
 const TZ = 'Europe/Bucharest';

@@ -4,18 +4,25 @@ export const FESTIVAL = {
   name: 'Dark Bombastic Evening',
   shortName: 'DBE',
   edition: '12th Edition',
-  venue: 'RÂMA',
-  location: 'RÂMA · Alba Iulia, Romania',
+  /**
+   * The RYMA spaces in the Alba Iulia citadel, listed on the map — and known
+   * locally — as "Poarta 7 by Ryma", after Gate VII it is built into. Named
+   * here exactly as the map names it, so the label in the header and the pin
+   * the venue link opens are recognisably the same place.
+   */
+  venue: 'Poarta 7 by Ryma',
+  location: 'Poarta 7 by Ryma · Alba Iulia, Romania',
+  /**
+   * The town on its own, for the share and recap images: their header line is
+   * drawn on a 560px canvas and the full venue line does not fit, so it would
+   * be cut mid-word rather than simply saying less.
+   */
+  city: 'Alba Iulia',
   dates: '12–15 August 2026',
   /** Doors / first note, as printed on the poster. */
   doors: '18:00',
-  /**
-   * What the "open in Maps" link searches for. A place name rather than a pin:
-   * the exact coordinates of the site are not published, and a search degrades
-   * to the right town instead of dropping a marker in the wrong field. Replace
-   * with "lat,lon" once the venue's own pin is confirmed.
-   */
-  mapQuery: 'RÂMA, Alba Iulia, Romania',
+  /** What the "open in Maps" link searches for: the venue's own map listing. */
+  mapQuery: 'Poarta 7 by Ryma, Alba Iulia',
   ticketsUrl: 'https://eventbook.ro/music/bilete-dbe-12',
   siteUrl: 'https://www.facebook.com/DarkBombasticEvening',
 };

@@ -2,7 +2,8 @@
 
 An unofficial, installable night planner for the 12th edition of
 [Dark Bombastic Evening](https://www.facebook.com/DarkBombasticEvening), held at
-RÂMA in Alba Iulia, Romania, from 12–15 August 2026.
+Poarta 7 by Ryma — the RYMA spaces in the Alba Iulia citadel, Romania — from
+12–15 August 2026.
 
 **[Open the planner](https://aoprisan.github.io/dbe2026/)**
 
