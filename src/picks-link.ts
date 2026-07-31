@@ -1,6 +1,7 @@
 import { ALL_SLOTS } from './schedule';
 import { selection } from './store';
 import { FESTIVAL } from './data';
+import { copyText } from './clipboard';
 
 /**
  * Encode the current picks into a short, shareable link so a friend can open
@@ -62,30 +63,6 @@ export interface PicksShareResult {
   outcome: 'shared' | 'copied' | 'failed' | 'empty';
 }
 
-async function copy(text: string): Promise<boolean> {
-  try {
-    if (navigator.clipboard?.writeText) {
-      await navigator.clipboard.writeText(text);
-      return true;
-    }
-  } catch {
-    /* fall through */
-  }
-  try {
-    const ta = document.createElement('textarea');
-    ta.value = text;
-    ta.style.position = 'fixed';
-    ta.style.opacity = '0';
-    document.body.appendChild(ta);
-    ta.select();
-    const ok = document.execCommand('copy');
-    ta.remove();
-    return ok;
-  } catch {
-    return false;
-  }
-}
-
 /** Offer the picks link via the native share sheet, else copy to clipboard. */
 export async function sharePicksLink(): Promise<PicksShareResult> {
   if (selection.size() === 0) return { outcome: 'empty' };
@@ -108,7 +85,7 @@ export async function sharePicksLink(): Promise<PicksShareResult> {
     }
   }
 
-  return { outcome: (await copy(url)) ? 'copied' : 'failed' };
+  return { outcome: (await copyText(url)) ? 'copied' : 'failed' };
 }
 
 /**
