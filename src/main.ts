@@ -2,6 +2,7 @@ import './style.css';
 import { mount, renderAskLink, renderOfficialLinks } from './render';
 import { init as initNotifications } from './notify';
 import { importPicksFromUrl } from './picks-link';
+import { maybeOpenGuide } from './guide';
 import { loadWallet } from './wallet';
 import { initServiceWorker, renderBuildInfo } from './update';
 
@@ -37,6 +38,12 @@ if (app) {
   // without waiting for the service worker to notice on its own.
   footer.appendChild(renderBuildInfo());
   app.appendChild(footer);
+
+  // First arrival on this device: walk through what the app does once, before
+  // anyone has to guess that a tap picks a set or that the ticket lives in the
+  // bottom bar. It marks itself seen on opening and never appears uninvited
+  // again — the "?" in the header is the way back.
+  maybeOpenGuide();
 }
 
 // ---- PWA install prompt ----

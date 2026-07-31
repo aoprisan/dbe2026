@@ -18,6 +18,8 @@ from the app's footer, and are the word that outranks anything here.
 
 ## Features
 
+- A "How this planner works" panel — the whole app in one minute, opened once on
+  a first visit and afterwards from the `?` in the header
 - A single-stage timeline for all four festival nights
 - Device-local picks and must-see acts
 - Live “now / next” status and set countdowns
@@ -97,6 +99,26 @@ When an official running order is announced:
 
 Use `null` for an event's `link` or `listen` value when no useful online
 destination exists and the app should not generate a search fallback.
+
+## The usage guide
+
+Everything in this app is built for the fourth night: the tools fold away behind
+one strip, the ticket and the journal are icons in the bottom bar, and the
+must-see star only exists once a set is picked. That is the wrong shape for the
+first minute, so [`src/guide.ts`](src/guide.ts) walks the app once, in the order
+a person meets it — the nights, a pick, the strip of tools, the bar at the
+bottom, then installing, offline and where the data lives.
+
+It opens by itself on a first visit — no picks on the device and nothing
+imported from a shared link — and marks itself seen on opening rather than on
+closing, so a panel swiped away or a tab killed mid-read is never offered twice.
+After that it is the `?` in the header and **❔ How this works** in ⚙ Options.
+
+The panel is written against the real UI, so a section that stops being true is
+a section to change: the copy names the actual buttons, and the numbers in it
+(the band-night count, doors, the curfew window) are read from `src/data.ts`.
+While the running order is provisional it also carries that caveat at the foot,
+under the same warning rule the rest of the app uses.
 
 ## Asking about the festival
 

@@ -18,6 +18,7 @@ import {
 } from './schedule';
 import { moonLabel, moonTitle, nightMoon } from './moon';
 import { renderDiscover } from './discover';
+import { openGuide } from './guide';
 import { openCrew, friendsForSlot, subscribeCrew, initials } from './crew';
 import {
   selection,
@@ -189,10 +190,31 @@ function renderHeader(): HTMLElement {
 
   header.appendChild(title);
 
+  // The right-hand corner of the masthead: what you have picked, and the way
+  // back to the explanation of how any of it works.
+  const right = el('div', 'header-right');
+
   const stats = el('div', 'header-stats');
   stats.id = 'header-stats';
-  header.appendChild(stats);
+  right.appendChild(stats);
+
+  right.appendChild(renderGuideBadge());
+  header.appendChild(right);
   return header;
+}
+
+/**
+ * The "?" in the corner. The guide opens itself once on a first visit; this is
+ * where it lives afterwards, because the corner of the header is where a person
+ * who is lost has always looked for it.
+ */
+function renderGuideBadge(): HTMLElement {
+  const btn = el('button', 'header-help', '?');
+  btn.type = 'button';
+  btn.title = 'How this planner works';
+  btn.setAttribute('aria-label', 'How this planner works');
+  btn.addEventListener('click', () => openGuide());
+  return btn;
 }
 
 /**
@@ -318,6 +340,7 @@ function renderToolbar(): HTMLElement {
   panel.appendChild(renderPicksLinkButton());
   panel.appendChild(renderCrewButton());
   panel.appendChild(renderAskButton());
+  panel.appendChild(renderGuideButton());
 
   // Right group: options disclosure + clear all.
   const actions = el('div', 'tb-group tb-actions');
@@ -1425,6 +1448,18 @@ function renderCrewButton(): HTMLElement {
   const btn = el('button', 'btn-ghost btn-crew', '👥 Crew');
   btn.title = 'Overlay your friends’ picks: shared sets and meet-up windows';
   btn.addEventListener('click', () => openCrew());
+  return btn;
+}
+
+/**
+ * The same guide, from inside the toolbar. The "?" in the header is for anyone
+ * who is lost on arrival; this one is for the person already holding a tool
+ * they don't recognise, standing among the rest of them.
+ */
+function renderGuideButton(): HTMLElement {
+  const btn = el('button', 'btn-ghost btn-guide', '❔ How this works');
+  btn.title = 'A one-minute tour of everything this planner does';
+  btn.addEventListener('click', () => openGuide());
   return btn;
 }
 
