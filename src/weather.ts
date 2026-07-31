@@ -1,5 +1,15 @@
 import { DAYS, FESTIVAL } from './data';
 import { moonLabel, moonTitle, nightMoon } from './moon';
+import {
+  adjustHigh,
+  adjustLow,
+  adjustTemp,
+  adjustmentKey,
+  cachedHindsight,
+  ensureHindsight,
+  isAdjusting,
+  renderHindsight,
+} from './hindsight';
 
 // Festival site: Poarta 7 by Ryma, in the Alba Iulia citadel, Romania.
 const LAT = 46.07;
@@ -52,6 +62,42 @@ let dialog: HTMLDialogElement | null = null;
 // The most recently rendered hourly data, keyed by ISO hour, so row toggles can
 // build their strip lazily without re-fetching.
 let hourIndex = new Map<string, HourForecast>();
+// The last data handed to renderDays, kept so the panel can repaint itself
+// when the report card lands with a changed correction.
+let lastDaily: DailyForecast[] = [];
+let lastHours: HourForecast[] = [];
+// The learned-correction stamp the visible panel was painted with.
+let renderedAdjKey = '';
+
+// The report card section lives inside the scrollable weather body, but as one
+// persistent element re-appended across repaints, so its open/closed state and
+// scroll position aren't thrown away every time the forecast refreshes.
+let benchEl: HTMLElement | null = null;
+
+function benchSection(): HTMLElement {
+  if (!benchEl) {
+    benchEl = document.createElement('div');
+    renderHindsight(benchEl, cachedHindsight());
+  }
+  return benchEl;
+}
+
+/**
+ * Bring the report card up to date (cache-first, then network on its own TTL)
+ * and let the current estimate learn from it: if the nudge applied to the
+ * displayed temperatures changed, repaint the day list. An unchanged nudge
+ * leaves the panel alone, so open hourly strips don't collapse for nothing.
+ */
+function refreshHindsight(): void {
+  void ensureHindsight().then((h) => {
+    if (benchEl) renderHindsight(benchEl, h);
+    if (adjustmentKey() === renderedAdjKey) return;
+    const body = document.getElementById('weather-body');
+    if (dialog?.open && body && lastDaily.length > 0) {
+      renderDays(body, lastDaily, lastHours);
+    }
+  });
+}
 
 // The running order shows per-set weather icons, so it needs the hourly forecast
 // in memory whether or not the weather dialog has ever been opened. We load it
@@ -149,6 +195,7 @@ async function doRefresh(): Promise<void> {
     if (dialog?.open && body) {
       renderDays(body, days, hours);
       setNote(document.getElementById('weather-note'), fetchedAt);
+      refreshHindsight();
     }
   } catch {
     /* offline / API down — keep the last good forecast */
@@ -310,6 +357,9 @@ async function load(): Promise<void> {
   if (cached) renderDays(body, cached.days, cached.hours);
   else body.textContent = 'Loading forecast…';
 
+  // The report card refreshes on its own TTL, whatever the forecast cache says.
+  refreshHindsight();
+
   if (fresh) {
     setNote(note, cached!.fetchedAt);
     return;
@@ -461,6 +511,9 @@ async function fetchAvailableForecast(params: URLSearchParams): Promise<Response
 
 function renderDays(body: HTMLElement, days: DailyForecast[], hours: HourForecast[]): void {
   hourIndex = new Map(hours.map((h) => [h.time, h]));
+  lastDaily = days;
+  lastHours = hours;
+  renderedAdjKey = adjustmentKey();
 
   body.innerHTML = '';
   const list = document.createElement('ul');
@@ -509,7 +562,17 @@ function renderDays(body: HTMLElement, days: DailyForecast[], hours: HourForecas
     const meta = document.createElement('span');
     meta.className = 'weather-meta';
     if (hasTemp(f)) {
-      meta.appendChild(chip(`${Math.round(f!.tMax!)}° / ${Math.round(f!.tMin!)}°`));
+      // Highs and lows carry whatever correction the report card has learned
+      // from past misses; the * says the number is not the raw forecast.
+      const star = isAdjusting() ? '*' : '';
+      const temps = chip(
+        `${Math.round(adjustHigh(f!.tMax!))}° / ${Math.round(adjustLow(f!.tMin!))}°${star}`,
+      );
+      if (star) {
+        temps.title =
+          'Adjusted by what the forecast got wrong lately — see the report card below.';
+      }
+      meta.appendChild(temps);
     }
     if (f?.precip != null) meta.appendChild(chip(`💧 ${Math.round(f.precip)}%`));
     // Pair the chance with an amount, but keep the two honest: the % is an
@@ -561,6 +624,7 @@ function renderDays(body: HTMLElement, days: DailyForecast[], hours: HourForecas
   });
 
   body.appendChild(list);
+  body.appendChild(benchSection());
 }
 
 function renderHours(container: HTMLElement, date: string): void {
@@ -596,7 +660,7 @@ function renderHours(container: HTMLElement, date: string): void {
 
     const temp = document.createElement('span');
     temp.className = 'weather-hour-temp';
-    temp.textContent = h.temp != null ? `${Math.round(h.temp)}°` : '—';
+    temp.textContent = h.temp != null ? `${Math.round(adjustTemp(h.temp))}°` : '—';
     cell.appendChild(temp);
 
     const rain = document.createElement('span');

@@ -25,7 +25,9 @@ from the app's footer, and are the word that outranks anything here.
 - Shareable pick links, QR codes, and crew overlays
 - Calendar export and optional local reminders
 - One-tap directions to the venue in Google Maps
-- Festival-hour weather from Open-Meteo
+- Festival-hour weather from Open-Meteo, with a report card that benchmarks
+  past forecasts against the real sky and lets today's estimate learn from
+  those misses
 - The moon phase over each night, computed on the device — no network needed,
   so it still shows when the forecast can't be fetched
 - Your own ticket, one tap from the bottom bar — the festival pass or a single
@@ -121,6 +123,28 @@ correct as the line-up does, and it says in its own first lines that it is
 fan-made and that provisional times are estimates. Nothing is sent anywhere by
 the app itself: the whole prompt is on screen behind "See exactly what gets
 sent", and it only travels when the person taps through to Claude.
+
+## The forecast's report card
+
+A forecast for a festival two weeks out deserves to be asked how it has been
+doing. [`src/hindsight.ts`](src/hindsight.ts) asks: it pulls Open-Meteo's
+Previous Runs API for the venue, which carries — for each of the last ten
+finished days — both what actually happened and what the forecast had said
+about that day from the same distance you are reading the festival forecast
+from (as many days ahead as the first night still is, capped at seven). Each
+day is graded on its daily high, low, and rain-or-no-rain call, and the
+weather panel shows the whole ledger in a collapsible section under the
+nights.
+
+The current estimate then learns from those mistakes: the mean error on highs
+and lows becomes a nudge applied to the temperatures the panel displays.
+The nudge is deliberately hard to earn — it needs at least five graded days,
+ignores drift under 0.3 °C, and never exceeds ±3 °C — and it is never silent:
+adjusted chips carry a `*`, and the report card states in plain words what was
+learned and what it changed. Rain is reported but not corrected; a hit rate is
+honest, a rescaled millimetre figure would only pretend to be. The report card
+is cached like the forecast itself, so the learned correction still applies on
+site with no signal.
 
 ## Builds and updates
 
