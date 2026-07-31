@@ -48,6 +48,8 @@ import {
   unratedCount,
 } from './journal';
 import * as notify from './notify';
+import { subscribeWallet, ticketsForNight } from './wallet';
+import { openTicketViewer } from './wallet-ui';
 
 // Vertical scale of the running order. DBE plays one stage, so each set gets the
 // full width of the sheet and needs far less height than a three-column grid —
@@ -123,6 +125,9 @@ export function mount(root: HTMLElement): void {
 
   // Friend overlays ride on the running order; repaint when the crew changes.
   subscribeCrew(() => renderContent(main));
+
+  // An imported ticket puts a "show my ticket" chip on that night's header.
+  subscribeWallet(() => renderContent(main));
 
   // Ratings show on the timeline, and the journal button's dot tracks them.
   subscribeJournal(() => {
@@ -697,6 +702,17 @@ function renderNightHead(day: FestivalDay): HTMLElement {
   right.appendChild(
     el('span', 'night-chip', `${picked}/${day.sets.length} picked`),
   );
+  // Hold a ticket for this night and the price stops being the point: what you
+  // want from this header at the gate is the ticket itself, one tap away.
+  const held = ticketsForNight(day.id);
+  if (held.length > 0) {
+    const show = el('button', 'night-chip night-ticket', '🎫 My ticket');
+    show.type = 'button';
+    show.title = 'Show your ticket for this night, full screen';
+    show.addEventListener('click', () => openTicketViewer(held[0].id));
+    right.appendChild(show);
+  }
+
   const price = el('button', 'night-chip night-price');
   price.type = 'button';
   price.textContent = day.price == null ? 'price soon' : `${day.price} lei`;

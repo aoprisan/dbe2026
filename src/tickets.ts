@@ -3,6 +3,8 @@ import type { FestivalDay } from './types';
 import { fmtDuration, getSlot } from './schedule';
 import { unionMinutes } from './stats';
 import { selection } from './store';
+import { heldNights, loadWallet, subscribeWallet, ticketsForNight } from './wallet';
+import { openTicketViewer, renderWallet } from './wallet-ui';
 
 /**
  * DBE sells the festival by the night, at a different price per night. With one
@@ -30,9 +32,12 @@ export interface NightCost {
   perSet: number | null;
   /** Price per hour of picked music, or null when either side is missing. */
   perHour: number | null;
+  /** True once a ticket for this night has been imported into the wallet. */
+  held: boolean;
 }
 
 export function nightCosts(): NightCost[] {
+  const held = heldNights();
   return DAYS.map((day) => {
     const picked = selection
       .ids()
@@ -49,6 +54,7 @@ export function nightCosts(): NightCost[] {
       price,
       perSet: price != null && picked.length > 0 ? price / picked.length : null,
       perHour: price != null && minutes > 0 ? price / (minutes / 60) : null,
+      held: held.has(day.id),
     };
   });
 }
@@ -56,11 +62,15 @@ export function nightCosts(): NightCost[] {
 export interface TicketTotals {
   /** Nights you have at least one pick on. */
   chosen: NightCost[];
+  /** Chosen nights you already hold an imported ticket for. */
+  covered: NightCost[];
+  /** Chosen nights still to pay for — `chosen` minus `covered`. */
+  toBuy: NightCost[];
   /** Nights you have no picks on. */
   untouched: NightCost[];
-  /** Sum of the published prices across your chosen nights. */
+  /** Sum of the published prices across the nights still to buy. */
   total: number;
-  /** True when a chosen night has no published price yet. */
+  /** True when a night still to buy has no published price yet. */
   hasUnpriced: boolean;
   /** Sum of every published price on the bill. */
   fullRun: number;
@@ -69,11 +79,16 @@ export interface TicketTotals {
 export function ticketTotals(): TicketTotals {
   const costs = nightCosts();
   const chosen = costs.filter((c) => c.picks > 0);
+  // A ticket already in the wallet is money already spent: it comes off the
+  // total rather than sitting in it, so the sum is what you still owe.
+  const toBuy = chosen.filter((c) => !c.held);
   return {
     chosen,
+    covered: chosen.filter((c) => c.held),
+    toBuy,
     untouched: costs.filter((c) => c.picks === 0),
-    total: chosen.reduce((sum, c) => sum + (c.price ?? 0), 0),
-    hasUnpriced: chosen.some((c) => c.price == null),
+    total: toBuy.reduce((sum, c) => sum + (c.price ?? 0), 0),
+    hasUnpriced: toBuy.some((c) => c.price == null),
     fullRun: costs.reduce((sum, c) => sum + (c.price ?? 0), 0),
   };
 }
@@ -102,6 +117,9 @@ export function openTickets(): void {
   repaint();
   if (typeof dialog.showModal === 'function') dialog.showModal();
   else dialog.setAttribute('open', '');
+  // The wallet is read from IndexedDB, so it may land a moment after the sheet
+  // opens; the subscription below repaints it in place when it does.
+  void loadWallet();
 }
 
 function buildDialog(): HTMLDialogElement {
@@ -133,6 +151,11 @@ function buildDialog(): HTMLDialogElement {
     if (e.target === d) d.close();
   });
   document.body.appendChild(d);
+
+  subscribeWallet(() => {
+    if (d.open) repaint();
+  });
+
   return d;
 }
 
@@ -143,6 +166,7 @@ function repaint(): void {
 
   const totals = ticketTotals();
 
+  body.appendChild(renderWallet(repaint));
   body.appendChild(renderNightList(nightCosts()));
   body.appendChild(renderTotals(totals));
 
@@ -168,6 +192,7 @@ function renderNightList(costs: NightCost[]): HTMLElement {
     const li = el('li', 'ticket-row');
     li.style.setProperty('--c', c.day.id === 'ceremony' ? '#9d84c4' : 'var(--accent)');
     if (c.picks > 0) li.classList.add('is-chosen');
+    if (c.held) li.classList.add('is-held');
 
     const top = el('div', 'ticket-row-top');
     top.appendChild(el('span', 'ticket-night', c.day.label));
@@ -191,6 +216,13 @@ function renderNightList(costs: NightCost[]): HTMLElement {
     li.appendChild(top);
 
     const meta = el('div', 'ticket-meta');
+    if (c.held) {
+      const show = el('button', 'ticket-chip is-held', '🎫 ticket imported — show it');
+      show.type = 'button';
+      const [first] = ticketsForNight(c.day.id);
+      show.addEventListener('click', () => openTicketViewer(first.id));
+      meta.appendChild(show);
+    }
     meta.appendChild(
       el('span', 'ticket-chip', `${c.picks}/${c.total} ${c.total === 1 ? 'set' : 'sets'} picked`),
     );
@@ -226,17 +258,30 @@ function renderTotals(t: TicketTotals): HTMLElement {
     return wrap;
   }
 
-  const nights = t.chosen.length;
+  const nights = t.toBuy.length;
   const head = el('p', 'ticket-total-head');
-  head.textContent = `${nights} ${nights === 1 ? 'night' : 'nights'} to buy`;
+  head.textContent =
+    nights === 0
+      ? 'Every night you picked is paid for'
+      : `${nights} ${nights === 1 ? 'night' : 'nights'} to buy`;
   wrap.appendChild(head);
 
-  const sum = el('p', 'ticket-total-sum');
-  sum.textContent = t.hasUnpriced ? `${money(t.total)} + ceremony (price soon)` : money(t.total);
-  wrap.appendChild(sum);
+  if (nights > 0) {
+    const sum = el('p', 'ticket-total-sum');
+    sum.textContent = t.hasUnpriced ? `${money(t.total)} + ceremony (price soon)` : money(t.total);
+    wrap.appendChild(sum);
+    wrap.appendChild(el('p', 'ticket-total-note', t.toBuy.map((c) => c.day.label).join(' · ')));
+  }
 
-  const names = t.chosen.map((c) => c.day.label).join(' · ');
-  wrap.appendChild(el('p', 'ticket-total-note', names));
+  if (t.covered.length > 0) {
+    wrap.appendChild(
+      el(
+        'p',
+        'ticket-total-note',
+        `🎫 Ticket in your wallet for ${t.covered.map((c) => c.day.label).join(' · ')}.`,
+      ),
+    );
+  }
 
   if (t.untouched.length > 0) {
     wrap.appendChild(el('p', 'ticket-upsell-head', 'Talked into another night?'));
@@ -248,9 +293,11 @@ function renderTotals(t: TicketTotals): HTMLElement {
         el(
           'span',
           'ticket-upsell-cost',
-          c.price == null
-            ? '+ price soon'
-            : `+ ${money(c.price)} for ${c.total} ${c.total === 1 ? 'set' : 'sets'}`,
+          c.held
+            ? `already in your wallet · ${c.total} ${c.total === 1 ? 'set' : 'sets'}`
+            : c.price == null
+              ? '+ price soon'
+              : `+ ${money(c.price)} for ${c.total} ${c.total === 1 ? 'set' : 'sets'}`,
         ),
       );
       ul.appendChild(li);
