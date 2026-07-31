@@ -34,6 +34,8 @@ from the app's footer, and are the word that outranks anything here.
 - A post-show journal, ratings, statistics, and recap image
 - Links out to the festival's official site and Facebook page
 - Offline support and installation as a Progressive Web App
+- A build stamp in the footer, with a "force update" button for pulling a newer
+  build straight away instead of waiting for the service worker to notice
 
 All personal data stays in the browser. There is no account, backend, or
 analytics service.
@@ -89,6 +91,34 @@ When an official running order is announced:
 
 Use `null` for an event's `link` or `listen` value when no useful online
 destination exists and the app should not generate a search fallback.
+
+## Builds and updates
+
+Every build stamps its own timestamp and short commit into the bundle
+(`__BUILD_TIME__` / `__BUILD_COMMIT__`, defined in
+[`vite.config.ts`](vite.config.ts) and declared in [`src/env.d.ts`](src/env.d.ts)).
+The footer shows the timestamp; the commit and the line-up data version sit in
+its tooltip. Because the stamp changes on every build, the entry chunk does too,
+which is what gives the service worker a new revision to install.
+
+The service worker updates on its own, but a phone can sit on yesterday's copy
+until its next cold start. The footer's **force update** button, implemented in
+[`src/update.ts`](src/update.ts), settles it on the spot:
+
+- a newer build is on its way in — the page reloads onto it;
+- nothing newer — the caches are dropped, the worker unregistered and the page
+  reloaded, so the device comes back on a clean copy of the current build (this
+  is also how a precache that was half-written on a bad connection is repaired);
+- the site is unreachable — nothing is touched and the button says so, because
+  clearing an offline-first app's caches with no signal leaves a blank page.
+
+Note that `registration.update()` resolves rather than rejects when its fetch
+fails, so "up to date" and "offline" look identical from there. The button
+confirms the site is actually reachable with its own cache-busting request
+before it throws anything away.
+
+Picks, tickets, journal entries and crew overlays live in `localStorage` and are
+untouched by any of this.
 
 ## Deployment
 
