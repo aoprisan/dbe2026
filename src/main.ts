@@ -1,5 +1,5 @@
 import './style.css';
-import { mount, renderOfficialLinks } from './render';
+import { mount, renderAskLink, renderOfficialLinks } from './render';
 import { init as initNotifications } from './notify';
 import { importPicksFromUrl } from './picks-link';
 import { loadWallet } from './wallet';
@@ -27,6 +27,9 @@ if (app) {
   footer.append('Line-up from the official posters; running order and times provisional.');
   footer.appendChild(document.createElement('br'));
   footer.append('Your picks are saved on this device only.');
+  // Stuck on something this planner doesn't answer — the trip, the town, the
+  // bands — hand the question and the whole line-up to an assistant.
+  footer.appendChild(renderAskLink());
   // The festival's own addresses, right under the line that says this planner
   // is not the festival — if the two ever disagree, theirs is the one that wins.
   footer.appendChild(renderOfficialLinks());

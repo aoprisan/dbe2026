@@ -27,6 +27,7 @@ import {
 } from './store';
 import { shareSelection } from './share';
 import { openShareApp } from './share-app';
+import { openAsk } from './ask';
 import { sharePicksLink } from './picks-link';
 import { computeLive, fmtCountdown } from './live';
 import { computeStats } from './stats';
@@ -315,6 +316,7 @@ function renderToolbar(): HTMLElement {
   panel.appendChild(renderCalendarMenu());
   panel.appendChild(renderPicksLinkButton());
   panel.appendChild(renderCrewButton());
+  panel.appendChild(renderAskButton());
 
   // Right group: options disclosure + clear all.
   const actions = el('div', 'tb-group tb-actions');
@@ -1406,6 +1408,29 @@ function renderCrewButton(): HTMLElement {
   btn.title = 'Overlay your friends’ picks: shared sets and meet-up windows';
   btn.addEventListener('click', () => openCrew());
   return btn;
+}
+
+/* ---------- ask an assistant about the festival ---------- */
+function renderAskButton(): HTMLElement {
+  const btn = el('button', 'btn-ghost btn-ask', '💬 Ask about the fest');
+  btn.title = 'Ask an assistant anything about the festival, with the line-up handed over for you';
+  btn.addEventListener('click', () => openAsk());
+  return btn;
+}
+
+/**
+ * The same door, in the footer. Options is where the tools live, but a question
+ * about the festival tends to arrive at the bottom of the page — after the last
+ * set, next to the line admitting this planner is not the festival.
+ */
+export function renderAskLink(): HTMLElement {
+  const wrap = el('p', 'footer-ask');
+  const btn = el('button', 'footer-ask-btn', '💬 Ask about the festival');
+  btn.type = 'button';
+  btn.title = 'Your question, plus everything this planner knows, handed to an assistant';
+  btn.addEventListener('click', () => openAsk());
+  wrap.appendChild(btn);
+  return wrap;
 }
 
 /* ---------- share picks as a link ---------- */

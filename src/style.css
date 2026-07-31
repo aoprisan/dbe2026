@@ -2463,6 +2463,119 @@ body {
   color: #100c05;
 }
 
+/* ---------- ask an assistant about the festival ---------- */
+.ask-question {
+  display: block;
+  width: 100%;
+  resize: vertical;
+  line-height: 1.5;
+}
+.ask-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 10px 0 12px;
+}
+.ask-chip {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  font-family: inherit;
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 6px 11px;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+.ask-chip:hover,
+.ask-chip:focus-visible {
+  color: var(--text);
+  border-color: color-mix(in srgb, var(--accent) 55%, var(--line));
+}
+.ask-picks {
+  margin-bottom: 12px;
+}
+.ask-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+/* One look for both actions, though "Ask Claude" is an anchor — only a real
+   link gets handed to the Claude app by the phone. */
+.ask-btn {
+  flex: 1 1 140px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  text-decoration: none;
+  padding: 11px 14px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  background: var(--panel);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 0.84rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.ask-btn:hover:not(:disabled) {
+  border-color: var(--accent);
+}
+.ask-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.ask-btn.primary {
+  border-color: transparent;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  color: #100c05;
+}
+.ask-btn.primary:hover {
+  filter: brightness(1.08);
+}
+.ask-status {
+  margin: 10px 2px 0;
+  font-size: 0.72rem;
+  color: var(--muted);
+  line-height: 1.5;
+}
+.ask-status:empty {
+  display: none;
+}
+.ask-preview-wrap {
+  margin-top: 12px;
+}
+.ask-preview-summary {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 4px 0;
+}
+.ask-preview-summary:hover {
+  color: var(--text);
+}
+/* The brief is pre-formatted and long: let it scroll in its own box rather
+   than stretching the sheet, and keep its columns lined up. */
+.ask-preview {
+  margin: 8px 0 0;
+  max-height: 220px;
+  overflow: auto;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--bg-2);
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 0.64rem;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  word-break: break-word;
+  -webkit-overflow-scrolling: touch;
+}
+
 /* ---------- in-app reminder toasts ---------- */
 .toast-host {
   position: fixed;
@@ -2567,6 +2680,31 @@ body {
 }
 .app-footer a {
   color: var(--accent);
+}
+
+/* The way out of a question this planner can't answer. Sits above the official
+   links on purpose: those are the festival's word, this is only a helper. */
+.footer-ask {
+  margin: 12px 0 0;
+  display: flex;
+  justify-content: center;
+}
+.footer-ask-btn {
+  border: 1px solid color-mix(in srgb, var(--accent) 40%, var(--line));
+  border-radius: 999px;
+  background: transparent;
+  color: var(--accent);
+  font-family: inherit;
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 7px 14px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+.footer-ask-btn:hover,
+.footer-ask-btn:focus-visible {
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  border-color: var(--accent);
 }
 
 /* The festival's own pages. Set slightly apart from the disclaimer above it,

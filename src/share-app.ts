@@ -1,6 +1,7 @@
 import qrcode from 'qrcode-generator';
 import { FESTIVAL } from './data';
 import { SHARE_URL } from './share';
+import { copyText } from './clipboard';
 
 /** Build a crisp, scalable SVG QR code for the given text. */
 function qrSvg(text: string): string {
@@ -86,7 +87,7 @@ function buildDialog(): HTMLDialogElement {
   copyBtn.className = 'share-app-btn';
   copyBtn.textContent = 'Copy link';
   copyBtn.addEventListener('click', async () => {
-    const ok = await copyLink(SHARE_URL);
+    const ok = await copyText(SHARE_URL);
     copyBtn.textContent = ok ? 'Copied ✓' : 'Copy failed';
     setTimeout(() => (copyBtn.textContent = 'Copy link'), 1600);
   });
@@ -102,28 +103,4 @@ function buildDialog(): HTMLDialogElement {
 
   document.body.appendChild(d);
   return d;
-}
-
-async function copyLink(text: string): Promise<boolean> {
-  try {
-    if (navigator.clipboard?.writeText) {
-      await navigator.clipboard.writeText(text);
-      return true;
-    }
-  } catch {
-    /* fall through to legacy copy */
-  }
-  try {
-    const ta = document.createElement('textarea');
-    ta.value = text;
-    ta.style.position = 'fixed';
-    ta.style.opacity = '0';
-    document.body.appendChild(ta);
-    ta.select();
-    const ok = document.execCommand('copy');
-    ta.remove();
-    return ok;
-  } catch {
-    return false;
-  }
 }

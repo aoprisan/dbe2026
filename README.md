@@ -32,6 +32,8 @@ from the app's footer, and are the word that outranks anything here.
 - A link out to eventbook.ro for anyone who hasn't bought yet; prices and fees
   are the shop's to state, not this app's
 - A post-show journal, ratings, statistics, and recap image
+- "Ask about the festival" — your question handed to Claude along with a written
+  brief of everything the planner knows, or copied for any other assistant
 - Links out to the festival's official site and Facebook page
 - Offline support and installation as a Progressive Web App
 - A build stamp in the footer, with a "force update" button for pulling a newer
@@ -91,6 +93,32 @@ When an official running order is announced:
 
 Use `null` for an event's `link` or `listen` value when no useful online
 destination exists and the app should not generate a search fallback.
+
+## Asking about the festival
+
+People turn up with questions this planner deliberately does not answer — how to
+get to Alba Iulia, what an August night inside the citadel is like, whether one
+night is worth swapping for another. [`src/ask.ts`](src/ask.ts) hands those to an
+assistant without making anyone explain the festival first: it writes out a plain
+text brief — dates, venue and how to find it, the curfew, the whole bill with
+genres and countries, the official links, and optionally your own picks — puts
+the question on top, and offers two ways out.
+
+- **Ask Claude** opens `https://claude.ai/new?q=…` with the prompt in the
+  composer. It is a real anchor rather than a scripted `window.open` on purpose:
+  that is the only form iOS and Android hand to the installed Claude app, so a
+  phone with the app opens the app and everyone else lands on the web. (The
+  `claude://` scheme goes to the Code tab and expects a Claude Code account —
+  the wrong door for someone asking what to pack.)
+- **Copy prompt** puts the same text on the clipboard for any other assistant.
+  It also runs behind the Claude button, which covers a blocked tab and a prompt
+  over the 5,000-character prefill limit, where the composer opens empty.
+
+The brief is generated from `src/data.ts` and `src/band-meta.ts`, so it stays
+correct as the line-up does, and it says in its own first lines that it is
+fan-made and that provisional times are estimates. Nothing is sent anywhere by
+the app itself: the whole prompt is on screen behind "See exactly what gets
+sent", and it only travels when the person taps through to Claude.
 
 ## Builds and updates
 
