@@ -30,16 +30,19 @@ from the app's footer, and are the word that outranks anything here.
 - Festival-hour weather from Open-Meteo, with a report card that benchmarks
   past forecasts against the real sky and lets today's estimate learn from
   those misses
-- The moon phase over each night, computed on the device — no network needed,
-  so it still shows when the forecast can't be fetched
+- Sunset and the moon phase over each night, computed on the device — no network
+  needed, so they still show when the forecast can't be fetched
+- The partial solar eclipse that takes the sun down over the opening ceremony on
+  12 August 2026, found by the same maths rather than written in by hand
 - Your own ticket, one tap from the bottom bar — the festival pass or a single
   night, imported from the shop's PDF or a photo, kept on the device, shown full
   screen at the gate, and marked once it becomes a wristband
 - A link out to eventbook.ro for anyone who hasn't bought yet; prices and fees
   are the shop's to state, not this app's
 - A post-show journal, ratings, statistics, and recap image
-- "Ask about the festival" — your question handed to Claude along with a written
-  brief of everything the planner knows, or copied for any other assistant
+- "Ask about the festival" — your question handed to Claude or ChatGPT along with
+  a written brief of everything the planner knows, or copied for any other
+  assistant
 - Links out to the festival's official site and Facebook page
 - Offline support and installation as a Progressive Web App
 - A build stamp in the footer, with a "force update" button for pulling a newer
@@ -127,8 +130,9 @@ get to Alba Iulia, what an August night inside the citadel is like, whether one
 night is worth swapping for another. [`src/ask.ts`](src/ask.ts) hands those to an
 assistant without making anyone explain the festival first: it writes out a plain
 text brief — dates, venue and how to find it, the curfew, the whole bill with
-genres and countries, the official links, and optionally your own picks — puts
-the question on top, and offers two ways out.
+genres and countries, sunset and the moon over each night, the eclipse on the
+opening one, the official links, and optionally your own picks — puts the
+question on top, and offers three ways out.
 
 - **Ask Claude** opens `https://claude.ai/new?q=…` with the prompt in the
   composer. It is a real anchor rather than a scripted `window.open` on purpose:
@@ -136,15 +140,68 @@ the question on top, and offers two ways out.
   phone with the app opens the app and everyone else lands on the web. (The
   `claude://` scheme goes to the Code tab and expects a Claude Code account —
   the wrong door for someone asking what to pack.)
+- **Ask ChatGPT** does the same through `https://chatgpt.com/?q=…`, which the
+  ChatGPT mobile apps claim as a universal link. `chat.openai.com` only
+  redirects there, which would cost a hop and, on some Android versions, the
+  hand-off to the app; and `chatgpt://` fails outright for anyone without the
+  app instead of falling back to the site.
 - **Copy prompt** puts the same text on the clipboard for any other assistant.
-  It also runs behind the Claude button, which covers a blocked tab and a prompt
-  over the 5,000-character prefill limit, where the composer opens empty.
+  It also runs behind both assistant buttons, which covers a blocked tab and a
+  prompt over the 5,000-character prefill ceiling, where the composer opens
+  empty. Claude documents that limit; ChatGPT does not, so it shares the same
+  conservative number rather than an invented one.
 
 The brief is generated from `src/data.ts` and `src/band-meta.ts`, so it stays
 correct as the line-up does, and it says in its own first lines that it is
 fan-made and that provisional times are estimates. Nothing is sent anywhere by
 the app itself: the whole prompt is on screen behind "See exactly what gets
-sent", and it only travels when the person taps through to Claude.
+sent", and it only travels when the person taps through to an assistant.
+
+## The sky over the citadel
+
+Doors are at 18:00 and the sun does not leave a mid-August evening in Alba Iulia
+until well past 20:30, so the first stretch of every night happens in daylight.
+[`src/sun.ts`](src/sun.ts) says when that ends, [`src/moon.ts`](src/moon.ts) says
+what replaces it, and [`src/astro.ts`](src/astro.ts) holds the spherical
+astronomy all of it shares. Everything is Meeus, *Astronomical Algorithms*
+(2nd ed.), and everything runs on the device: the sky is the one part of this
+planner that still works with no signal inside a fortress.
+
+Sunset uses the definition every almanac prints — the centre of the disc 0°50′
+below the true horizon, covering both the sun's own radius and average
+refraction — so the number matches whatever weather app is in someone's other
+hand. It is a flat-horizon figure; the citadel walls will take the sun a few
+minutes earlier, and the tooltip says so.
+
+### The eclipse on the opening night
+
+On 12 August 2026 there is a total solar eclipse over the North Atlantic,
+Greenland, Iceland and northern Spain. Alba Iulia is nowhere near the path of
+totality and the sun sets there long before the deep phase — but the opening
+ceremony still gets the striking half of that trade, because the sun goes down
+*already bitten into*, low over the western wall, in the gap between doors and
+the first performance.
+
+[`src/eclipse.ts`](src/eclipse.ts) works this out rather than storing it. It asks
+the same question of all four nights — is the moon in front of the sun here, and
+is the sun still up — gated on the moon being near new, then bisects the contact
+times out of the same ephemeris the sunset and the phase come from. Point the app
+at another edition and the eclipse either moves or stops being mentioned, with no
+date edited into a string. Both bodies are converted to topocentric coordinates
+first: from the surface the moon sits up to a degree from its geocentric place,
+several times the entire depth of this partial phase.
+
+From the venue that works out as first contact at 20:24 local with the sun 1.6°
+up, sunset at 20:39 with the sun still eclipsed, and greatest eclipse at 21:14
+when it is long below the horizon. The app reports two numbers for how deep it
+gets, because quoting one is how "30% eclipsed" and "19% eclipsed" come to
+describe the same sky: magnitude, the fraction of the sun's *diameter* covered,
+and obscuration, the fraction of its *area*. It also says, everywhere it says
+anything, that a partly eclipsed sun still needs certified filters to look at.
+
+The maths was checked against published local circumstances for this eclipse: it
+reproduces the 38% obscuration quoted for Oradea and correctly puts the sun below
+the horizon in Bucharest before first contact.
 
 ## The forecast's report card
 

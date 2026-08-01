@@ -1,5 +1,17 @@
 import { DAYS } from './data';
 import { festivalInstant } from './schedule';
+import { sunPosition } from './sun';
+import {
+  acos,
+  atan2,
+  cos,
+  julianCenturies,
+  norm360,
+  obliquity,
+  sin,
+  toEquatorial,
+  type Equatorial,
+} from './astro';
 import type { FestivalDay, NightId } from './types';
 
 /**
@@ -10,29 +22,143 @@ import type { FestivalDay, NightId } from './types';
  * much light there is to find your way back through the walls afterwards. This
  * module answers one question per day: what phase is the moon in that night.
  *
- * The maths is Meeus' *Astronomical Algorithms* (chapters 25, 47 and 48),
- * truncated to the largest periodic terms. That is worth a few arcminutes on
- * the moon's longitude and well under a percentage point of illumination —
- * far finer than a label reading "Waxing crescent · 6% lit" can express.
+ * The maths is Meeus' *Astronomical Algorithms* (chapters 47 and 48), with the
+ * full periodic series rather than a truncation. A label reading "Waxing
+ * crescent · 6% lit" would survive a much rougher moon than this — but the
+ * eclipse over the opening ceremony would not, and it reads the moon's position
+ * from here. One lunar theory, accurate enough for the strictest reader of it.
  */
 
-const DEG = Math.PI / 180;
-const AU_KM = 149597870.7;
 /** Mean synodic month, in days — used only to phrase the moon's age. */
 const SYNODIC_DAYS = 29.530588853;
+/** True radius of the moon, kilometres — its apparent size during the eclipse. */
+export const MOON_RADIUS_KM = 1737.4;
 
-/** Julian centuries since J2000.0 (2000-01-01 12:00 TT). */
-function julianCenturies(at: Date): number {
-  const jd = at.getTime() / 86400000 + 2440587.5;
-  return (jd - 2451545) / 36525;
+/**
+ * Meeus table 47.A — the periodic terms of the moon's longitude and distance.
+ * Columns: multiples of D, M, M′ and F, then the coefficient of the sine term
+ * in longitude (units of 1e-6 degrees) and of the cosine term in distance
+ * (units of 1e-3 km).
+ */
+const LON_DIST_TERMS: ReadonlyArray<readonly number[]> = [
+  [0, 0, 1, 0, 6288774, -20905355], [2, 0, -1, 0, 1274027, -3699111],
+  [2, 0, 0, 0, 658314, -2955968], [0, 0, 2, 0, 213618, -569925],
+  [0, 1, 0, 0, -185116, 48888], [0, 0, 0, 2, -114332, -3149],
+  [2, 0, -2, 0, 58793, 246158], [2, -1, -1, 0, 57066, -152138],
+  [2, 0, 1, 0, 53322, -170733], [2, -1, 0, 0, 45758, -204586],
+  [0, 1, -1, 0, -40923, -129620], [1, 0, 0, 0, -34720, 108743],
+  [0, 1, 1, 0, -30383, 104755], [2, 0, 0, -2, 15327, 10321],
+  [0, 0, 1, 2, -12528, 0], [0, 0, 1, -2, 10980, 79661],
+  [4, 0, -1, 0, 10675, -34782], [0, 0, 3, 0, 10034, -23210],
+  [4, 0, -2, 0, 8548, -21636], [2, 1, -1, 0, -7888, 24208],
+  [2, 1, 0, 0, -6766, 30824], [1, 0, -1, 0, -5163, -8379],
+  [1, 1, 0, 0, 4987, -16675], [2, -1, 1, 0, 4036, -12831],
+  [2, 0, 2, 0, 3994, -10445], [4, 0, 0, 0, 3861, -11650],
+  [2, 0, -3, 0, 3665, 14403], [0, 1, -2, 0, -2689, -7003],
+  [2, 0, -1, 2, -2602, 0], [2, -1, -2, 0, 2390, 10056],
+  [1, 0, 1, 0, -2348, 6322], [2, -2, 0, 0, 2236, -9884],
+  [0, 1, 2, 0, -2120, 5751], [0, 2, 0, 0, -2069, 0],
+  [2, -2, -1, 0, 2048, -4950], [2, 0, 1, -2, -1773, 4130],
+  [2, 0, 0, 2, -1595, 0], [4, -1, -1, 0, 1215, -3958],
+  [0, 0, 2, 2, -1110, 0], [3, 0, -1, 0, -892, 3258],
+  [2, 1, 1, 0, -810, 2616], [4, -1, -2, 0, 759, -1897],
+  [0, 2, -1, 0, -713, -2117], [2, 2, -1, 0, -700, 2354],
+  [2, 1, -2, 0, 691, 0], [2, -1, 0, -2, 596, 0],
+  [4, 0, 1, 0, 549, -1423], [0, 0, 4, 0, 537, -1117],
+  [4, -1, 0, 0, 520, -1571], [1, 0, -2, 0, -487, -1739],
+  [2, 1, 0, -2, -399, 0], [0, 0, 2, -2, -381, -4421],
+  [1, 1, 1, 0, 351, 0], [3, 0, -2, 0, -340, 0],
+  [4, 0, -3, 0, 330, 0], [2, -1, 2, 0, 327, 0],
+  [0, 2, 1, 0, -323, 1165], [1, 1, -1, 0, 299, 0],
+  [2, 0, 3, 0, 294, 0], [2, 0, -1, -2, 0, 8752],
+];
+
+/**
+ * Meeus table 47.B — the periodic terms of the moon's ecliptic latitude, in
+ * units of 1e-6 degrees. The moon's orbit is tilted about 5° to the ecliptic,
+ * and that tilt is exactly why most new moons are not eclipses.
+ */
+const LAT_TERMS: ReadonlyArray<readonly number[]> = [
+  [0, 0, 0, 1, 5128122], [0, 0, 1, 1, 280602], [0, 0, 1, -1, 277693],
+  [2, 0, 0, -1, 173237], [2, 0, -1, 1, 55413], [2, 0, -1, -1, 46271],
+  [2, 0, 0, 1, 32573], [0, 0, 2, 1, 17198], [2, 0, 1, -1, 9266],
+  [0, 0, 2, -1, 8822], [2, -1, 0, -1, 8216], [2, 0, -2, -1, 4324],
+  [2, 0, 1, 1, 4200], [2, 1, 0, -1, -3359], [2, -1, -1, 1, 2463],
+  [2, -1, 0, 1, 2211], [2, -1, -1, -1, 2065], [0, 1, -1, -1, -1870],
+  [4, 0, -1, -1, 1828], [0, 1, 0, 1, -1794], [0, 0, 0, 3, -1749],
+  [0, 1, -1, 1, -1565], [1, 0, 0, 1, -1491], [0, 1, 1, 1, -1475],
+  [0, 1, 1, -1, -1410], [0, 1, 0, -1, -1344], [1, 0, 0, -1, -1335],
+  [0, 0, 3, 1, 1107], [4, 0, 0, -1, 1021], [4, 0, -1, 1, 833],
+  [0, 0, 1, -3, 777], [4, 0, -2, 1, 671], [2, 0, 0, -3, 607],
+  [2, 0, 2, -1, 596], [2, -1, 1, -1, 491], [2, 0, -2, 1, -451],
+  [0, 0, 3, -1, 439], [2, 0, 2, 1, 422], [2, 0, -3, -1, 421],
+  [2, 1, -1, 1, -366], [2, 1, 0, 1, -351], [4, 0, 0, 1, 331],
+  [2, -1, 1, 1, 315], [2, -2, 0, -1, 302], [0, 0, 1, 3, -283],
+  [2, 1, 1, -1, -229], [1, 1, 0, -1, 223], [1, 1, 0, 1, 223],
+  [0, 1, -2, -1, -220], [2, 1, -1, -1, -220], [1, 0, 1, 1, -185],
+  [2, -1, -2, -1, 181], [0, 1, 2, 1, -177], [4, 0, -2, -1, 176],
+  [4, -1, -1, -1, 166], [1, 0, 1, -1, -164], [4, 0, 1, -1, 132],
+  [1, 0, -1, -1, -119], [4, -1, 0, -1, 115], [2, -2, 0, 1, 107],
+];
+
+export interface MoonPosition extends Equatorial {
+  /** Apparent geocentric ecliptic longitude, degrees. */
+  lon: number;
+  /** Ecliptic latitude, degrees — how far off the ecliptic the moon rides. */
+  lat: number;
 }
 
-const sin = (deg: number) => Math.sin(deg * DEG);
-const cos = (deg: number) => Math.cos(deg * DEG);
+/** Apparent geocentric position of the moon (Meeus ch. 47). */
+export function moonPosition(at: Date): MoonPosition {
+  const t = julianCenturies(at);
 
-/** Normalise an angle in degrees to [0, 360). */
-function norm360(deg: number): number {
-  return ((deg % 360) + 360) % 360;
+  const lp = norm360(218.3164477 + 481267.88123421 * t - 0.0015786 * t * t); // mean longitude
+  const d = norm360(297.8501921 + 445267.1114034 * t - 0.0018819 * t * t); // mean elongation
+  const m = norm360(357.5291092 + 35999.0502909 * t - 0.0001536 * t * t); // sun's mean anomaly
+  const mp = norm360(134.9633964 + 477198.8675055 * t + 0.0087414 * t * t); // moon's mean anomaly
+  const f = norm360(93.272095 + 483202.0175233 * t - 0.0036539 * t * t); // argument of latitude
+
+  // Venus, Jupiter and the flattening of the Earth, as three further arguments.
+  const a1 = norm360(119.75 + 131.849 * t);
+  const a2 = norm360(53.09 + 479264.29 * t);
+  const a3 = norm360(313.45 + 481266.484 * t);
+
+  // The eccentricity of the Earth's orbit is falling, which slowly weakens every
+  // term that depends on the sun's anomaly.
+  const e = 1 - 0.002516 * t - 0.0000074 * t * t;
+  const eccentricity = (mult: number): number =>
+    Math.abs(mult) === 1 ? e : Math.abs(mult) === 2 ? e * e : 1;
+
+  let sumL = 0;
+  let sumR = 0;
+  for (const [cd, cm, cmp, cf, coefL, coefR] of LON_DIST_TERMS) {
+    const arg = cd * d + cm * m + cmp * mp + cf * f;
+    const scale = eccentricity(cm);
+    sumL += coefL * scale * sin(arg);
+    sumR += coefR * scale * cos(arg);
+  }
+
+  let sumB = 0;
+  for (const [cd, cm, cmp, cf, coefB] of LAT_TERMS) {
+    const arg = cd * d + cm * m + cmp * mp + cf * f;
+    sumB += coefB * eccentricity(cm) * sin(arg);
+  }
+
+  // Additive corrections for the planetary perturbations (Meeus, after 47.B).
+  sumL += 3958 * sin(a1) + 1962 * sin(lp - f) + 318 * sin(a2);
+  sumB +=
+    -2235 * sin(lp) +
+    382 * sin(a3) +
+    175 * sin(a1 - f) +
+    175 * sin(a1 + f) +
+    127 * sin(lp - mp) -
+    115 * sin(lp + mp);
+
+  const lon = norm360(lp + sumL / 1e6);
+  const lat = sumB / 1e6;
+  const distKm = 385000.56 + sumR / 1000;
+
+  return { lon, lat, ...toEquatorial(lon, lat, obliquity(t), distKm) };
 }
 
 export interface MoonPhase {
@@ -89,66 +215,20 @@ function nameFor(angle: number): { name: string; emoji: string } {
 
 /** The phase of the moon at a given instant. */
 export function moonPhase(at: Date): MoonPhase {
-  const t = julianCenturies(at);
-
-  // Sun — Meeus ch. 25, apparent longitude and radius vector.
-  const sunM = norm360(357.52911 + 35999.05029 * t - 0.0001537 * t * t);
-  const sunL0 = norm360(280.46646 + 36000.76983 * t + 0.0003032 * t * t);
-  const sunC =
-    (1.914602 - 0.004817 * t - 0.000014 * t * t) * sin(sunM) +
-    (0.019993 - 0.000101 * t) * sin(2 * sunM) +
-    0.000289 * sin(3 * sunM);
-  const sunLon = norm360(sunL0 + sunC);
-  const sunAu =
-    1.000001018 *
-    ((1 - 0.016708634 * 0.016708634) / (1 + 0.016708634 * cos(sunM + sunC)));
-
-  // Moon — Meeus ch. 47, the leading terms of the longitude and distance series.
-  const lp = norm360(218.3164477 + 481267.88123421 * t); // mean longitude
-  const d = norm360(297.8501921 + 445267.1114034 * t); // mean elongation
-  const mp = norm360(134.9633964 + 477198.8675055 * t); // mean anomaly
-  const f = norm360(93.272095 + 483202.0175233 * t); // argument of latitude
-
-  const moonLon = norm360(
-    lp +
-      6.288774 * sin(mp) +
-      1.274027 * sin(2 * d - mp) +
-      0.658314 * sin(2 * d) +
-      0.213618 * sin(2 * mp) -
-      0.185116 * sin(sunM) -
-      0.114332 * sin(2 * f) +
-      0.058793 * sin(2 * d - 2 * mp) +
-      0.057066 * sin(2 * d - sunM - mp) +
-      0.053322 * sin(2 * d + mp) +
-      0.045758 * sin(2 * d - sunM),
-  );
-  const moonLat =
-    5.128122 * sin(f) +
-    0.280602 * sin(mp + f) +
-    0.277693 * sin(mp - f) +
-    0.173237 * sin(2 * d - f) +
-    0.055413 * sin(2 * d - mp + f) +
-    0.046271 * sin(2 * d - mp - f);
-  const moonKm =
-    385000.56 -
-    20905.355 * cos(mp) -
-    3699.111 * cos(2 * d - mp) -
-    2955.968 * cos(2 * d) -
-    569.925 * cos(2 * mp);
+  const sun = sunPosition(at);
+  const moon = moonPosition(at);
 
   // Elongation, then the phase angle of the sun–moon–earth triangle: the moon
   // is close enough that the sun does not light it from exactly our direction,
   // which is what keeps a "new" moon from reading as precisely 0% lit.
-  const cosPsi = cos(moonLat) * cos(moonLon - sunLon);
-  const psi = Math.acos(Math.max(-1, Math.min(1, cosPsi))) / DEG;
-  const sunKm = sunAu * AU_KM;
-  const phaseAngle =
-    Math.atan2(sunKm * sin(psi), moonKm - sunKm * cos(psi)) / DEG;
+  const psi = acos(cos(moon.lat) * cos(moon.lon - sun.lon));
+  const sunKm = sun.distKm;
+  const phaseAngle = atan2(sunKm * sin(psi), moon.distKm - sunKm * cos(psi));
   const fraction = (1 + cos(phaseAngle)) / 2;
 
   // Signed elongation carries what the unsigned phase angle cannot: which side
   // of new or full we are on, and therefore which way the crescent points.
-  const angle = norm360(moonLon - sunLon);
+  const angle = norm360(moon.lon - sun.lon);
   const { name, emoji } = nameFor(angle);
 
   return {
