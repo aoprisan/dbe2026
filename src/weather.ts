@@ -30,7 +30,7 @@ const API = 'https://api.open-meteo.com/v1/forecast';
 const CACHE_KEY = 'dbe12:weather:v1';
 const CACHE_TTL_MS = 60 * 60 * 1000; // an hour is plenty for a daily forecast
 
-// Doors are at 18:00 and the curfew stops the music before midnight, so the
+// The first set is at 18:00 and the curfew stops the music before midnight, so the
 // "day" we care about weather-wise is 16:00 through 00:00 — early enough to
 // cover the walk in, late enough to cover the way home.
 const HOUR_FROM = 16; // inclusive, on the day's date

@@ -94,8 +94,8 @@ function suggestions(): ReadonlyArray<{ label: string; question: string }> {
     {
       label: '🌘 The eclipse',
       question:
-        `The sun sets partly eclipsed over the venue on the opening night, between doors and the ` +
-        `first performance. How do I watch that safely, what will it actually look like that low ` +
+        `The sun sets partly eclipsed over the venue on the opening night, in the hour before the ` +
+        `night's one performance. How do I watch that safely, what will it actually look like that low ` +
         `on the horizon, and where in the citadel would I get a clear view west?`,
     },
     ...SUGGESTIONS,

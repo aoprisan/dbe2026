@@ -88,11 +88,18 @@ The core festival details, nights, and set times live in
 [`src/data.ts`](src/data.ts). Band genres, countries, and curated listening links
 live in [`src/band-meta.ts`](src/band-meta.ts).
 
-Until the official running order lands, the provisional grid is built from three
-known constraints: roughly 50-minute sets, roughly 25-minute changeovers, and a
-hard finish between 23:30 and 23:45 — the venue's noise limit with the police.
-The slots are laid backwards from that curfew, which puts the first set at 19:00
-and the last note at 23:35.
+Until the official running order lands, the provisional grid is pinned at both
+ends and filled in between. The poster's "starting at 6 PM" is taken as the
+first downbeat rather than as a gate an hour ahead of it, so the opening set is
+at 18:00; the last note is at 23:35, inside the 23:30–23:45 finish the venue has
+agreed with the police. Four bands across those 5h35m, with the ~25-minute
+changeovers a single stage needs, works out at 65-minute sets and a 90-minute
+cadence: 18:00, 19:30, 21:00, 22:30.
+
+The Opening Ceremony is not on that grid. It is one staged piece rather than a
+bill of bands, and it stays at 21:00 — after dark, which is what a masked and
+lit HAMLET wants, and which leaves the eclipsed sunset in the empty hour before
+it.
 
 When an official running order is announced:
 
@@ -159,7 +166,7 @@ sent", and it only travels when the person taps through to an assistant.
 
 ## The sky over the citadel
 
-Doors are at 18:00 and the sun does not leave a mid-August evening in Alba Iulia
+The music starts at 18:00 and the sun does not leave a mid-August evening in Alba Iulia
 until well past 20:30, so the first stretch of every night happens in daylight.
 [`src/sun.ts`](src/sun.ts) says when that ends, [`src/moon.ts`](src/moon.ts) says
 what replaces it, and [`src/astro.ts`](src/astro.ts) holds the spherical
@@ -179,8 +186,8 @@ On 12 August 2026 there is a total solar eclipse over the North Atlantic,
 Greenland, Iceland and northern Spain. Alba Iulia is nowhere near the path of
 totality and the sun sets there long before the deep phase — but the opening
 ceremony still gets the striking half of that trade, because the sun goes down
-*already bitten into*, low over the western wall, in the gap between doors and
-the first performance.
+*already bitten into*, low over the western wall, in the empty hour before the
+first performance.
 
 [`src/eclipse.ts`](src/eclipse.ts) works this out rather than storing it. It asks
 the same question of all four nights — is the moon in front of the sun here, and

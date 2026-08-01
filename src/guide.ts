@@ -1,4 +1,11 @@
-import { CURFEW, DAYS, FESTIVAL, RUNNING_ORDER_ANNOUNCED } from './data';
+import {
+  CHANGEOVER_MINUTES,
+  CURFEW,
+  DAYS,
+  FESTIVAL,
+  RUNNING_ORDER_ANNOUNCED,
+  SET_MINUTES,
+} from './data';
 import { selection } from './store';
 
 /**
@@ -32,6 +39,17 @@ interface Section {
 const BAND_NIGHTS = (['no', 'one', 'two', 'three', 'four', 'five'][DAYS.length - 1] ??
   String(DAYS.length - 1)) as string;
 
+/**
+ * When the music actually starts, read off the running order rather than
+ * written down here, so the line below stays true whether the grid is still
+ * this app's own or the official one: the earliest set on any band night. The
+ * Ceremony is left out of it — one staged piece keeps its own hour.
+ */
+const FIRST_SET =
+  DAYS.filter((day) => day.id !== 'ceremony')
+    .flatMap((day) => day.sets.map((set) => set.start))
+    .sort()[0] ?? FESTIVAL.doors;
+
 const SECTIONS: Section[] = [
   {
     icon: '🌙',
@@ -39,9 +57,9 @@ const SECTIONS: Section[] = [
     body:
       `The tabs under the title move between the Opening Ceremony and the ${BAND_NIGHTS} band ` +
       `nights. ${FESTIVAL.shortName} plays a single stage, so a night is one running order read ` +
-      `top to bottom — doors at ${FESTIVAL.doors}, the first set at 19:00, and the last note ` +
-      `between ${CURFEW.from} and ${CURFEW.to}, which is the venue's noise limit rather than a ` +
-      `soft target.`,
+      `top to bottom — the first set at ${FIRST_SET}, the start the poster promises, and the last ` +
+      `note between ${CURFEW.from} and ${CURFEW.to}, which is the venue's noise limit rather than ` +
+      `a soft target.`,
   },
   {
     icon: '✦',
@@ -108,8 +126,8 @@ const SECTIONS: Section[] = [
     title: 'The eclipse on the opening night',
     body:
       'On 12 August the sun sets over the citadel already partly covered by the moon — it starts ' +
-      'at 20:24 and the sun goes down still eclipsed at 20:39, in the gap between doors and the ' +
-      'first performance. This is not the total eclipse; that one is over the Atlantic and ' +
+      'at 20:24 and the sun goes down still eclipsed at 20:39, in the hour before the first ' +
+      'performance. This is not the total eclipse; that one is over the Atlantic and ' +
       'northern Spain. Looking at it needs certified eclipse filters, low and dim though it seems.',
   },
   {
@@ -254,10 +272,11 @@ function buildDialog(): HTMLDialogElement {
       el(
         'p',
         'guide-caveat',
-        'Set times are provisional. Until the festival publishes its running order, the grid is ' +
-          'built from ~50-minute sets, ~25-minute changeovers and the curfew — the bill and the ' +
-          'nights are from the official posters, the clock is an estimate, and every ' +
-          'provisional time is marked with a ~.',
+        `Set times are provisional. Until the festival publishes its running order, the grid is ` +
+          `built from the poster's ${FESTIVAL.doors} start, the curfew and ~${CHANGEOVER_MINUTES}-` +
+          `minute changeovers, which leaves ~${SET_MINUTES} minutes a set — the bill and the ` +
+          `nights are from the official posters, the clock is an estimate, and every provisional ` +
+          `time is marked with a ~.`,
       ),
     );
   }

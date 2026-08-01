@@ -748,7 +748,7 @@ function renderProvisionalNotice(): HTMLElement | null {
     el(
       'span',
       'provisional-sub',
-      `The posters give the bill per night and a ${FESTIVAL.doors} start, nothing more. The grid below is this app’s own placement — marked “~” — in the order the poster lists the acts: ${SET_MINUTES}-minute sets, ${CHANGEOVER_MINUTES}-minute changeovers, and a last note by ${CURFEW.to}, because the venue has to be quiet for the police after that. Picks, reminders and the calendar export all still work; they just move when the real times land.`,
+      `The posters give the bill per night and a ${FESTIVAL.doors} start, nothing more. The grid below is this app’s own placement — marked “~” — in the order the poster lists the acts: it opens on that ${FESTIVAL.doors} and fills the night to a last note by ${CURFEW.to}, because the venue has to be quiet for the police after that, which works out at ${SET_MINUTES}-minute sets with ${CHANGEOVER_MINUTES}-minute changeovers. Picks, reminders and the calendar export all still work; they just move when the real times land.`,
     ),
   );
   bar.appendChild(text);
@@ -765,8 +765,8 @@ function renderProvisionalNotice(): HTMLElement | null {
 
 /**
  * The sky over this night, under its date: when the sun goes, and what moon
- * replaces it. Four nights in an open courtyard inside a fortress, with doors
- * at 18:00 — so the first stretch of every night happens in daylight, and when
+ * replaces it. Four nights in an open courtyard inside a fortress, with the
+ * music from 18:00 — so the first stretch of every night happens in daylight, and when
  * that daylight ends is part of what the evening will look like.
  */
 function renderNightSky(day: FestivalDay): HTMLElement {
@@ -798,7 +798,7 @@ function renderNightSky(day: FestivalDay): HTMLElement {
 /**
  * The rarest thing on the bill, and not on the bill at all: on the opening
  * night of this edition the sun sets over the citadel already bitten into by
- * the moon. It lands between doors and the first performance, so it is the one
+ * the moon. It lands in the hour before the first performance, so it is the one
  * piece of sky here that is genuinely actionable — hence its own line, marked,
  * rather than another grey chip nobody reads.
  */
