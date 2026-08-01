@@ -1,13 +1,4 @@
-import {
-  DAYS,
-  FESTIVAL,
-  DATA_VERSION,
-  RUNNING_ORDER_ANNOUNCED,
-  CURFEW,
-  SET_MINUTES,
-  CHANGEOVER_MINUTES,
-  mapsUrl,
-} from './data';
+import { DAYS, FESTIVAL, DATA_VERSION, mapsUrl } from './data';
 import type { FestivalDay, SetSlot } from './types';
 import {
   ALL_SLOTS,
@@ -69,7 +60,6 @@ let controlsOpen = false;
 // The "Your festival" stats panel at the foot of the sheet is likewise collapsed.
 let statsOpen = false;
 let bannerDismissed = false;
-let provisionalDismissed = false;
 
 const el = <K extends keyof HTMLElementTagNameMap>(
   tag: K,
@@ -714,9 +704,6 @@ function renderContent(main: HTMLElement): void {
 
   renderDiscoverHost(day);
 
-  const notice = renderProvisionalNotice();
-  if (notice) main.appendChild(notice);
-
   main.appendChild(renderNightHead(day));
   main.appendChild(renderTimeline(slots, day.date));
   const stats = renderStats();
@@ -728,39 +715,6 @@ function renderDiscoverHost(day: FestivalDay): void {
   if (!host) return;
   host.innerHTML = '';
   host.appendChild(renderDiscover(day));
-}
-
-/**
- * The bill is out; the running order is not. Say so once, plainly, above the
- * timeline — every provisional set also carries a "~" on its own time, so the
- * two never drift apart.
- */
-function renderProvisionalNotice(): HTMLElement | null {
-  if (RUNNING_ORDER_ANNOUNCED || provisionalDismissed) return null;
-
-  const bar = el('div', 'provisional-notice');
-  bar.setAttribute('role', 'note');
-  bar.appendChild(el('span', 'provisional-icon', '⧗'));
-
-  const text = el('div', 'provisional-text');
-  text.appendChild(el('strong', 'provisional-title', 'Running order not announced yet'));
-  text.appendChild(
-    el(
-      'span',
-      'provisional-sub',
-      `The posters give the bill per night and a ${FESTIVAL.doors} start, nothing more. The grid below is this app’s own placement — marked “~” — in the order the poster lists the acts: it opens on that ${FESTIVAL.doors} and fills the night to a last note by ${CURFEW.to}, because the venue has to be quiet for the police after that, which works out at ${SET_MINUTES}-minute sets with ${CHANGEOVER_MINUTES}-minute changeovers. Picks, reminders and the calendar export all still work; they just move when the real times land.`,
-    ),
-  );
-  bar.appendChild(text);
-
-  const dismiss = el('button', 'provisional-close', '✕');
-  dismiss.setAttribute('aria-label', 'Dismiss');
-  dismiss.addEventListener('click', () => {
-    provisionalDismissed = true;
-    renderContent(document.getElementById('content') as HTMLElement);
-  });
-  bar.appendChild(dismiss);
-  return bar;
 }
 
 /**

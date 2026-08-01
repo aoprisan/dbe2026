@@ -563,55 +563,6 @@ body {
   bottom: calc(100% + 8px);
 }
 
-/* ---------- provisional-times notice ---------- */
-.provisional-notice {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  margin: 0 16px 14px;
-  padding: 11px 12px;
-  border: 1px solid color-mix(in srgb, var(--warn) 45%, var(--line));
-  border-left-width: 3px;
-  border-radius: var(--radius);
-  background: color-mix(in srgb, var(--warn) 8%, var(--panel));
-}
-.provisional-icon {
-  color: var(--warn);
-  font-size: 1.05rem;
-  line-height: 1.2;
-  flex-shrink: 0;
-}
-.provisional-text {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  min-width: 0;
-}
-.provisional-title {
-  font-family: var(--font-display);
-  font-size: 0.88rem;
-  font-weight: 600;
-  color: var(--warn);
-}
-.provisional-sub {
-  font-size: 0.74rem;
-  line-height: 1.5;
-  color: var(--muted);
-}
-.provisional-close {
-  border: none;
-  background: transparent;
-  color: var(--muted);
-  font-size: 0.85rem;
-  cursor: pointer;
-  padding: 2px 4px;
-  flex-shrink: 0;
-}
-.provisional-close:hover {
-  color: var(--text);
-}
-
 /* ---------- discovery panel ---------- */
 .discover-wrap:empty {
   display: none;
@@ -2831,11 +2782,31 @@ body {
 }
 .guide-foot {
   display: flex;
-  justify-content: center;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
   padding: 14px 0 4px;
 }
 .guide-foot .pill-btn {
   align-self: center;
+}
+.guide-hide {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+.guide-hide-box {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+.guide-hide:hover .guide-hide-text {
+  color: var(--text);
 }
 
 /* ---------- in-app reminder toasts ---------- */
