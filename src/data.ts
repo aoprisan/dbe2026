@@ -25,7 +25,11 @@ export const FESTIVAL = {
    */
   city: 'Alba Iulia',
   dates: '12–15 August 2026',
-  /** Doors / first note, as printed on the poster. */
+  /**
+   * "Starting at 6 PM", as printed on the poster — read as the first note
+   * rather than as a gate an hour ahead of it, which is where the provisional
+   * grid below now puts its opening set.
+   */
   doors: '18:00',
   /** What the "open in Maps" link searches for: the venue's own map listing. */
   mapQuery: 'Poarta 7 by Ryma, Alba Iulia',
@@ -72,16 +76,17 @@ export function mapsUrl(): string {
  * dropped or re-timed). Returning visitors whose last-seen stamp differs get a
  * one-time "line-up updated" banner so stale plans don't go unnoticed.
  */
-export const DATA_VERSION = '2026-07-31b';
+export const DATA_VERSION = '2026-08-01';
 
 /**
  * The official running order has not been published yet — the posters give the
- * bill per night, the venue, and "starting at 6 PM", nothing more. What is
- * known beyond the poster: sets run about 50 minutes, changeovers about 25, and
- * the night must end between 23:30 and 23:45 (see CURFEW). Every set below is
- * therefore placed on a provisional grid built from those three numbers (see
- * PROVISIONAL_SLOTS), in the order the poster lists it, and flagged `tba` so
- * the whole UI can say so.
+ * bill per night, the venue, and "starting at 6 PM", nothing more. That 6 PM is
+ * taken at its word: it is when the music starts, not when a gate opens an hour
+ * ahead of it. What is known beyond the poster: changeovers run about 25
+ * minutes, and the night must end between 23:30 and 23:45 (see CURFEW). Every
+ * set below is therefore placed on a provisional grid built from those numbers
+ * (see PROVISIONAL_SLOTS), in the order the poster lists it, and flagged `tba`
+ * so the whole UI can say so.
  *
  * Flip this to false — and replace the times — the day the running order lands.
  */
@@ -96,21 +101,23 @@ export const RUNNING_ORDER_ANNOUNCED = false;
 export const CURFEW = { from: '23:30', to: '23:45' } as const;
 
 /** Set length and changeover used to build the provisional grid, in minutes. */
-export const SET_MINUTES = 50;
+export const SET_MINUTES = 65;
 export const CHANGEOVER_MINUTES = 25;
 
 /**
- * The provisional shape of a band night: four ~50-minute sets with ~25-minute
- * changeovers between them, laid backwards from the curfew so the last note
- * falls at 23:35. That fixes the first downbeat at 19:00 — an hour after doors
- * — and gives a 75-minute cadence you can plan a night around. Used only while
- * `tba` is set.
+ * The provisional shape of a band night: four sets with ~25-minute changeovers
+ * between them, pinned at both ends — the first downbeat on the poster's 18:00
+ * start, the last note at 23:35, inside the curfew. Four bands across those
+ * 5h35m, minus three changeovers, is what makes a set 65 minutes rather than
+ * the 50 an evening with more names on it would run. It lands on a 90-minute
+ * cadence — 18:00, 19:30, 21:00, 22:30 — which is the shape you can plan a
+ * night around. Used only while `tba` is set.
  */
 export const PROVISIONAL_SLOTS: ReadonlyArray<{ start: string; end: string }> = [
-  { start: '19:00', end: '19:50' },
-  { start: '20:15', end: '21:05' },
-  { start: '21:30', end: '22:20' },
-  { start: '22:45', end: '23:35' },
+  { start: '18:00', end: '19:05' },
+  { start: '19:30', end: '20:35' },
+  { start: '21:00', end: '22:05' },
+  { start: '22:30', end: '23:35' },
 ];
 
 /**
@@ -154,10 +161,10 @@ export const DAYS: FestivalDay[] = [
     label: 'Night II',
     date: '2026-08-13',
     sets: [
-      { band: 'Årabrot', start: '19:00', end: '19:50', tba: true },
-      { band: 'Evoken', start: '20:15', end: '21:05', tba: true },
-      { band: 'Kwoon', start: '21:30', end: '22:20', tba: true },
-      { band: 'Wolvennest', start: '22:45', end: '23:35', tba: true },
+      { band: 'Årabrot', start: '18:00', end: '19:05', tba: true },
+      { band: 'Evoken', start: '19:30', end: '20:35', tba: true },
+      { band: 'Kwoon', start: '21:00', end: '22:05', tba: true },
+      { band: 'Wolvennest', start: '22:30', end: '23:35', tba: true },
     ],
   },
   {
@@ -165,10 +172,10 @@ export const DAYS: FestivalDay[] = [
     label: 'Night III',
     date: '2026-08-14',
     sets: [
-      { band: 'Pothamus', start: '19:00', end: '19:50', tba: true },
-      { band: 'Heretoir', start: '20:15', end: '21:05', tba: true },
-      { band: 'Mesarthim', start: '21:30', end: '22:20', tba: true },
-      { band: 'This Will Destroy You', start: '22:45', end: '23:35', tba: true },
+      { band: 'Pothamus', start: '18:00', end: '19:05', tba: true },
+      { band: 'Heretoir', start: '19:30', end: '20:35', tba: true },
+      { band: 'Mesarthim', start: '21:00', end: '22:05', tba: true },
+      { band: 'This Will Destroy You', start: '22:30', end: '23:35', tba: true },
     ],
   },
   {
@@ -176,10 +183,10 @@ export const DAYS: FestivalDay[] = [
     label: 'Night IV',
     date: '2026-08-15',
     sets: [
-      { band: 'Opia', start: '19:00', end: '19:50', tba: true },
-      { band: 'Skuggsjá', start: '20:15', end: '21:05', tba: true },
-      { band: 'The Kilimanjaro Darkjazz Ensemble', start: '21:30', end: '22:20', tba: true },
-      { band: "Old Man's Child", start: '22:45', end: '23:35', tba: true },
+      { band: 'Opia', start: '18:00', end: '19:05', tba: true },
+      { band: 'Skuggsjá', start: '19:30', end: '20:35', tba: true },
+      { band: 'The Kilimanjaro Darkjazz Ensemble', start: '21:00', end: '22:05', tba: true },
+      { band: "Old Man's Child", start: '22:30', end: '23:35', tba: true },
     ],
   },
 ];

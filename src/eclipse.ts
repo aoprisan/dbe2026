@@ -20,7 +20,7 @@ import type { FestivalDay, NightId } from './types';
  * long before the deep phase arrives. What the courtyard actually gets is the
  * better half of that trade for anyone already standing in it: the sun goes
  * down *with a bite taken out of it*, low over the western wall, in the hour
- * between doors and the first performance.
+ * in the hour before the first performance.
  *
  * Nothing about that is hardcoded. This module asks the same question of all
  * four nights — is the moon in front of the sun here, and is the sun still up —
@@ -280,6 +280,6 @@ export function eclipseBriefLines(e: SolarEclipse, dayName: string): string[] {
       : `  It ends at ${festivalClock(e.endsAt)}, with ${eclipseDepth(e)} at its deepest.`,
     `  Greatest eclipse (${pct(e.greatest.magnitude)}%) is at ${festivalClock(e.greatestAt)}, below the ` +
       `horizon from here. This is NOT totality — the total path is over the Atlantic, Greenland, Iceland and northern Spain.`,
-    `  It falls between doors and the first performance, and needs certified eclipse filters to look at safely.`,
+    `  It falls in the hour before the first performance, and needs certified eclipse filters to look at safely.`,
   ];
 }
