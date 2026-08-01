@@ -119,10 +119,14 @@ first minute, so [`src/guide.ts`](src/guide.ts) walks the app once, in the order
 a person meets it — the nights, a pick, the strip of tools, the bar at the
 bottom, then installing, offline and where the data lives.
 
-It opens by itself on a first visit — no picks on the device and nothing
-imported from a shared link — and marks itself seen on opening rather than on
-closing, so a panel swiped away or a tab killed mid-read is never offered twice.
-After that it is the `?` in the header and **❔ How this works** in ⚙ Options.
+It opens by itself on every start until someone ticks **Don't show this again on
+start** at its foot. A planner is opened a handful of times a year — once when
+the bill lands, again the week of the festival — so being shown it once is not
+the same as having learnt it, and the panel keeps offering itself until it is
+told not to. The tick is written through the moment it is made, so a panel
+swiped away or a tab killed mid-read still keeps the answer; unticking it in a
+later visit brings the panel back on launch. Either way it is always the `?` in
+the header and **❔ How this works** in ⚙ Options.
 
 The panel is written against the real UI, so a section that stops being true is
 a section to change: the copy names the actual buttons, and the numbers in it

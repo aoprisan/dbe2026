@@ -6,7 +6,6 @@ import {
   RUNNING_ORDER_ANNOUNCED,
   SET_MINUTES,
 } from './data';
-import { selection } from './store';
 
 /**
  * "How this works" — the one panel that explains the app itself.
@@ -19,11 +18,14 @@ import { selection } from './store';
  * it — the nights, a pick, the strip of tools, the bar at the bottom — and then
  * gets out of the way.
  *
- * It opens by itself on a first visit and never again unprompted; after that it
- * is a "?" in the header and an entry in ⚙ Options.
+ * It opens by itself on every start until the reader says otherwise — a
+ * festival planner is opened a handful of times a year, so "seen once" is not
+ * the same as "learnt", and the panel keeps offering itself until the box at
+ * the bottom is ticked. After that it is a "?" in the header and an entry in
+ * ⚙ Options, and unticking the box there brings it back on launch.
  */
 
-const SEEN_KEY = 'dbe12.guide.seen.v1';
+const HIDE_KEY = 'dbe12.guide.hidden.v1';
 
 interface Section {
   icon: string;
@@ -185,21 +187,23 @@ const el = <K extends keyof HTMLElementTagNameMap>(
 };
 
 let dialog: HTMLDialogElement | null = null;
+let hideBox: HTMLInputElement | null = null;
 
-/** Whether this device has already been shown the guide. */
-function guideSeen(): boolean {
+/** Whether the reader has asked not to be shown the guide on launch. */
+function guideHidden(): boolean {
   try {
-    return localStorage.getItem(SEEN_KEY) != null;
+    return localStorage.getItem(HIDE_KEY) != null;
   } catch {
-    // Private mode: treat it as seen rather than opening the panel on every
-    // single load of a browser that cannot remember it was closed.
+    // Private mode: treat it as hidden rather than opening the panel on every
+    // single load of a browser that cannot remember being told to stop.
     return true;
   }
 }
 
-function markSeen(): void {
+function setGuideHidden(hidden: boolean): void {
   try {
-    localStorage.setItem(SEEN_KEY, '1');
+    if (hidden) localStorage.setItem(HIDE_KEY, '1');
+    else localStorage.removeItem(HIDE_KEY);
   } catch {
     /* ignore quota / private mode */
   }
@@ -208,20 +212,21 @@ function markSeen(): void {
 /** Open the usage guide. */
 export function openGuide(): void {
   if (!dialog) dialog = buildDialog();
-  // Stamped on open, not on close: a panel swiped away or a tab killed
-  // mid-read has still been offered, and offering it twice is nagging.
-  markSeen();
+  // The box shows the standing answer, so reopening from the "?" is also the
+  // way back to being shown it on launch again.
+  if (hideBox) hideBox.checked = guideHidden();
   if (typeof dialog.showModal === 'function') dialog.showModal();
   else dialog.setAttribute('open', '');
 }
 
 /**
- * First visit — nobody has picked anything and nothing was imported from a
- * shared link — opens the guide once. A returning phone, or one that landed
- * here on someone else's line-up, goes straight to the running order.
+ * Every start opens the guide until someone ticks "Don't show this again" —
+ * the panel is how the app explains itself, and a planner opened once in
+ * spring and again in August is met cold both times. Having picks is not an
+ * answer either way; only the box is.
  */
 export function maybeOpenGuide(): void {
-  if (guideSeen() || selection.size() > 0) return;
+  if (guideHidden()) return;
   openGuide();
 }
 
@@ -292,6 +297,20 @@ function buildDialog(): HTMLDialogElement {
   );
 
   const foot = el('div', 'guide-foot');
+
+  // The only way this panel stops opening on launch. It writes through on the
+  // tick rather than on close, so a swipe away or a killed tab still keeps the
+  // answer the reader gave.
+  const hideLabel = el('label', 'guide-hide');
+  hideBox = document.createElement('input');
+  hideBox.type = 'checkbox';
+  hideBox.className = 'guide-hide-box';
+  hideBox.checked = guideHidden();
+  hideBox.addEventListener('change', () => setGuideHidden(hideBox?.checked ?? false));
+  hideLabel.appendChild(hideBox);
+  hideLabel.appendChild(el('span', 'guide-hide-text', 'Don’t show this again on start'));
+  foot.appendChild(hideLabel);
+
   const done = el('button', 'pill-btn', 'Start planning');
   done.type = 'button';
   done.addEventListener('click', () => d.close());
