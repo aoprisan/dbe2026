@@ -39,6 +39,10 @@ from the app's footer, and are the word that outranks anything here.
   screen at the gate, and marked once it becomes a wristband
 - A link out to eventbook.ro for anyone who hasn't bought yet; prices and fees
   are the shop's to state, not this app's
+- What the entrance itself sells, on the nights it does: the pass at the gate on
+  12 and 13 August, and the Opening Ceremony — a bonus night for pass holders —
+  for 100 lei at the door if it is only Hamlet you came for. The one price in
+  the app, because it exists nowhere but the gate
 - A post-show journal, ratings, statistics, and recap image
 - "Ask about the festival" — your question handed to Claude or ChatGPT along with
   a written brief of everything the planner knows, or copied for any other

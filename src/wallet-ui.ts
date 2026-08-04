@@ -1,5 +1,5 @@
 import qrcode from 'qrcode-generator';
-import { DAYS, FESTIVAL, NIGHTS } from './data';
+import { DAYS, FESTIVAL, NIGHTS, doorSaleNote } from './data';
 import type { NightId } from './types';
 import {
   importTicketFile,
@@ -20,8 +20,10 @@ import {
  * gate, at night, holding the phone out to someone with a scanner.
  *
  * This app is for people who are going, so the wallet is the ticket surface:
- * the ticket you bought, and — for anyone who hasn't yet — the shop's own link.
- * What a night costs is eventbook.ro's business, not this app's.
+ * the ticket you bought, and — for anyone who hasn't yet — the shop's own link
+ * and what the gate itself still sells. What eventbook.ro charges is
+ * eventbook.ro's business; the door price is the festival's own and exists
+ * nowhere else.
  */
 
 const el = <K extends keyof HTMLElementTagNameMap>(
@@ -152,11 +154,22 @@ function paintSheet(): void {
   buy.rel = 'noopener noreferrer';
   body.appendChild(buy);
 
+  // The shop is not the only counter this year: the gate itself sells on the
+  // first two nights, and that is the one thing a link to eventbook.ro cannot
+  // tell someone who has left it too late to order.
+  body.appendChild(
+    el(
+      'p',
+      'ticket-door',
+      `Still undecided? ${doorSaleNote()} At the gate you are handed the real thing, so there is nothing to import.`,
+    ),
+  );
+
   body.appendChild(
     el(
       'p',
       'sheet-hint',
-      'Tickets are sold on eventbook.ro — prices, nights and fees are theirs to state. This app only carries the ticket you already have, and it never leaves the device.',
+      'eventbook.ro sells the tickets and states what they cost; the gate price above is the festival’s own word. This app only carries the ticket you already have, and it never leaves the device.',
     ),
   );
 }

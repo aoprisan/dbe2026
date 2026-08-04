@@ -49,6 +49,111 @@ export const FESTIVAL = {
 };
 
 /**
+ * What is sold at the gate itself, announced by the festival on 4 August 2026.
+ *
+ * The pass price is not going up, and that decision is what makes a door sale
+ * possible: the same pass is handed over at the entrance on the first two
+ * nights, for anyone still undecided. The opening ceremony is otherwise a bonus
+ * night that comes with the pass — the only way in without one is a single
+ * ticket for the HAMLET performance, sold at the entrance that evening.
+ *
+ * That 100 lei is the one price this app states, and it is here for a reason:
+ * it exists only at the gate, so the shop cannot quote it and someone walking
+ * up to Gate VII has nowhere else to read it. Everything eventbook.ro sells is
+ * still eventbook.ro's to price.
+ */
+export const DOOR_SALES = {
+  /** Nights the pass itself is still sold at the entrance, at the shop's price. */
+  passNights: ['ceremony', 'thu'] as NightId[],
+  /** The one door-only single ticket of this edition. */
+  single: {
+    nightId: 'ceremony' as NightId,
+    act: 'HAMLET',
+    priceLei: 100,
+    /**
+     * When the box at the gate opens — not the performance time, which is still
+     * unannounced like everything else on the bill.
+     */
+    from: '18:00',
+  },
+  /** When the festival said so, so the app can date what it is repeating. */
+  announced: '4 August 2026',
+} as const;
+
+/** The gate-sale line for one night: a chip's worth, and the whole of it. */
+export interface DoorSale {
+  /** One line for the night header. */
+  label: string;
+  /** The full version, for the tooltip and anywhere with room. */
+  detail: string;
+}
+
+/** The day of the month a night falls on — "12", the way the poster says it. */
+function nightDayOfMonth(id: NightId): number {
+  const day = DAYS.find((d) => d.id === id);
+  return day ? new Date(day.date + 'T00:00:00').getDate() : 0;
+}
+
+/** "…sold at the entrance on 12 and 13 August…", built from the nights above. */
+function passSentence(): string {
+  const dates = DOOR_SALES.passNights.map(nightDayOfMonth).join(' and ');
+  return (
+    `The pass price is not going up, so the pass itself is sold at the entrance on ` +
+    `${dates} August.`
+  );
+}
+
+/**
+ * The ceremony's own sentence. `subject` names the night the way its context
+ * wants it — "This night" under the night's header, "12 August" anywhere the
+ * reader isn't already standing on it.
+ */
+function singleSentence(subject: string): string {
+  const { act, priceLei, from } = DOOR_SALES.single;
+  return (
+    `${subject} is a bonus for pass holders — and if it is ${act} alone you came for, a single ` +
+    `ticket is ${priceLei} lei at the entrance, on sale from ${from}.`
+  );
+}
+
+/** Which of the four nights you can still walk up to without a ticket. */
+export function doorSaleFor(id: NightId): DoorSale | null {
+  const pass = DOOR_SALES.passNights.includes(id);
+  const single = DOOR_SALES.single.nightId === id;
+  if (!pass && !single) return null;
+
+  const said = `Announced by the festival on ${DOOR_SALES.announced}.`;
+
+  if (!single) {
+    return {
+      label: 'At the gate · the pass, at the shop’s price',
+      detail: `${passSentence()} ${said}`,
+    };
+  }
+
+  const { act, priceLei } = DOOR_SALES.single;
+  return {
+    label: pass
+      ? `At the gate · the pass, or ${priceLei} lei for ${act} alone`
+      : `At the gate · ${priceLei} lei for ${act} alone`,
+    detail: [pass ? passSentence() : null, singleSentence('This night'), said]
+      .filter(Boolean)
+      .join(' '),
+  };
+}
+
+/**
+ * The same news as one paragraph, naming the nights rather than pointing at
+ * them — for the wallet, the guide and the brief, none of which is attached to
+ * a particular night the way the header line above is.
+ */
+export function doorSaleNote(): string {
+  const night = NIGHTS[DOOR_SALES.single.nightId];
+  const when = `${nightDayOfMonth(DOOR_SALES.single.nightId)} August`;
+  return `${passSentence()} ${singleSentence(`The ${night.name} on ${when}`)}`;
+}
+
+/**
  * Where the citadel actually is, for everything that has to be computed rather
  * than fetched: the forecast lookup, the moon over each night, the sunset the
  * nights begin against, and the eclipse that clips the first one. The elevation
@@ -152,7 +257,7 @@ export const DAYS: FestivalDay[] = [
         tba: true,
         link: null,
         listen: null,
-        note: 'Shakespeare staged in the extreme — masks, no text, live score by Sol Faur & Norbert Lovasz.',
+        note: 'Shakespeare staged in the extreme by Aualeu — masks, no text, live score by Sol Faur & Norbert Lovasz. The players from Kwoon, Årabrot and Wolvennest are in the citadel for it too.',
       },
     ],
   },

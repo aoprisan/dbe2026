@@ -1,4 +1,4 @@
-import { DAYS, FESTIVAL, DATA_VERSION, mapsUrl } from './data';
+import { DAYS, FESTIVAL, DATA_VERSION, doorSaleFor, mapsUrl } from './data';
 import type { FestivalDay, SetSlot } from './types';
 import {
   ALL_SLOTS,
@@ -769,6 +769,25 @@ function renderNightEclipse(day: FestivalDay): HTMLElement | null {
   return line;
 }
 
+/**
+ * The two nights you can still turn up to without having bought anything. It
+ * sits under the date rather than in the chips on the right, because it is not
+ * about the ticket on this device — it is about the one you don't have, and it
+ * has to be readable by someone deciding whether to drive to Alba Iulia.
+ */
+function renderNightDoor(day: FestivalDay): HTMLElement | null {
+  const sale = doorSaleFor(day.id);
+  if (!sale) return null;
+
+  const line = el('p', 'night-door');
+  line.title = sale.detail;
+  const glyph = el('span', 'night-door-glyph', '🎟');
+  glyph.setAttribute('aria-hidden', 'true');
+  line.appendChild(glyph);
+  line.appendChild(el('span', 'night-door-text', sale.label));
+  return line;
+}
+
 /** The night's own header: date, your ticket for it, and how much you've taken. */
 function renderNightHead(day: FestivalDay): HTMLElement {
   const head = el('div', 'night-head');
@@ -790,6 +809,8 @@ function renderNightHead(day: FestivalDay): HTMLElement {
   left.appendChild(renderNightSky(day));
   const eclipse = renderNightEclipse(day);
   if (eclipse) left.appendChild(eclipse);
+  const door = renderNightDoor(day);
+  if (door) left.appendChild(door);
   head.appendChild(left);
 
   const right = el('div', 'night-head-right');

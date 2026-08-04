@@ -5,6 +5,7 @@ import {
   FESTIVAL,
   RUNNING_ORDER_ANNOUNCED,
   SET_MINUTES,
+  doorSaleNote,
 } from './data';
 
 /**
@@ -112,7 +113,8 @@ const SECTIONS: Section[] = [
       'The first button in the bottom bar holds the pass or single night you bought: import it ' +
       'from the shop’s PDF or a photo of it, and it stays on this device, ready to show full ' +
       'screen at the gate. Mark it once it becomes a wristband. No ticket yet — the same panel ' +
-      'links out to the shop.',
+      'links out to the shop, and carries what the entrance itself still sells. ' +
+      doorSaleNote(),
   },
   {
     icon: '🌤',
