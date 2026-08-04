@@ -6,6 +6,7 @@ import {
   RUNNING_ORDER_ANNOUNCED,
   SET_MINUTES,
   CHANGEOVER_MINUTES,
+  doorSaleNote,
 } from './data';
 import { nightSlots } from './schedule';
 import { moonLabel, nightMoon } from './moon';
@@ -151,6 +152,7 @@ export function festivalBrief(includePicks: boolean): string {
     `- Hard finish between ${CURFEW.from} and ${CURFEW.to}: the venue's noise agreement with the police.`,
   );
   lines.push(`- Tickets: ${FESTIVAL.ticketsUrl} (the shop states the prices; this app does not).`);
+  lines.push(`- At the door: ${doorSaleNote()}`);
   lines.push(`- Official site: ${FESTIVAL.siteUrl}`);
   lines.push(`- Official Facebook: ${FESTIVAL.facebookUrl}`);
   lines.push('');

@@ -803,6 +803,29 @@ body {
   font-size: 0.78rem;
   line-height: 1;
 }
+/* Sold at the gate. Same pill as the eclipse above it, but inked in the night's
+   own colour rather than the eclipse's orange — on the opening night the two sit
+   one under the other and must not read as a single block of warning. */
+.night-door {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+  max-width: 100%;
+  margin: 5px 0 0;
+  padding: 3px 8px;
+  border: 1px solid color-mix(in srgb, var(--c, var(--accent)) 45%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--c, var(--accent)) 10%, transparent);
+  font-family: var(--font-mono);
+  font-size: 0.63rem;
+  letter-spacing: 0.04em;
+  color: var(--c, var(--accent));
+  cursor: help;
+}
+.night-door-glyph {
+  font-size: 0.78rem;
+  line-height: 1;
+}
 .night-head-right {
   display: flex;
   align-items: center;
@@ -1621,6 +1644,19 @@ body {
 }
 .ticket-buy:hover {
   filter: brightness(1.08);
+}
+/* What the gate itself sells — the answer for anyone who left it too late to
+   order, so it is set apart from the grey small print under it. */
+.ticket-door {
+  margin: 12px 0 0;
+  padding: 10px 12px;
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--line));
+  border-left-width: 3px;
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--accent) 7%, transparent);
+  font-size: 0.74rem;
+  line-height: 1.55;
+  color: var(--text);
 }
 /* Once a ticket is in the wallet the shop is a footnote, not the headline. */
 .ticket-buy.is-secondary {
