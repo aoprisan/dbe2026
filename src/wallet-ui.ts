@@ -10,6 +10,7 @@ import {
   subscribeWallet,
   TicketImportError,
   walletTickets,
+  warmTicketReader,
   type TicketScope,
   type WalletTicket,
 } from './wallet';
@@ -89,12 +90,17 @@ export function openWallet(): void {
 /** The wallet itself: every ticket on the device, and where to buy one. */
 export function openWalletSheet(): void {
   if (!sheet) sheet = buildSheet();
+  lastImportError = null; // a fresh opening starts without the last one's bad news
   paintSheet();
   if (typeof sheet.showModal === 'function') sheet.showModal();
   else sheet.setAttribute('open', '');
   // The wallet is read from IndexedDB, so it may land a moment after the sheet
   // opens; the subscription below repaints it in place when it does.
   void loadWallet();
+  // Whoever opened this panel is thinking about their ticket, so take the hint
+  // and fetch the PDF reader now, on whatever signal there is here — the place
+  // they will actually use it is the gate, where there is none.
+  void warmTicketReader();
 }
 
 function buildSheet(): HTMLDialogElement {
@@ -206,6 +212,16 @@ function renderWallet(repaint: () => void): HTMLElement {
   return wrap;
 }
 
+/**
+ * The last import failure, held outside the panel it is written into. An import
+ * ends in a repaint of the whole sheet — a ticket that landed changes
+ * everything around it — and that repaint builds a new importer, so a message
+ * left on the old one would be swept away in the same tick it was written. The
+ * one time this app has something to explain (offline, at the gate, a PDF that
+ * would not open) is the one time it must not do that.
+ */
+let lastImportError: string | null = null;
+
 function renderImporter(repaint: () => void, compact: boolean): HTMLElement {
   const box = el('div', 'wallet-import');
 
@@ -222,6 +238,10 @@ function renderImporter(repaint: () => void, compact: boolean): HTMLElement {
 
   const status = el('p', 'wallet-status');
   status.setAttribute('role', 'status');
+  if (lastImportError) {
+    status.className = 'wallet-status is-error';
+    status.textContent = lastImportError;
+  }
 
   input.addEventListener('change', () => {
     const files = [...(input.files ?? [])];
@@ -229,6 +249,7 @@ function renderImporter(repaint: () => void, compact: boolean): HTMLElement {
     if (files.length === 0) return;
 
     button.disabled = true;
+    lastImportError = null;
     status.className = 'wallet-status is-busy';
     status.textContent = files.length > 1 ? `Reading ${files.length} tickets…` : 'Reading your ticket…';
 
@@ -244,14 +265,15 @@ function renderImporter(repaint: () => void, compact: boolean): HTMLElement {
         }
       }
       button.disabled = false;
-      if (failures.length > 0) {
+      lastImportError = failures[0] ?? null;
+      if (lastImportError) {
         status.className = 'wallet-status is-error';
-        status.textContent = failures[0];
+        status.textContent = lastImportError;
       } else {
         status.className = 'wallet-status';
         status.textContent = '';
       }
-      repaint();
+      repaint(); // the message is carried across it by `lastImportError`
     })();
   });
 

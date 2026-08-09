@@ -381,8 +381,14 @@ async function load(): Promise<void> {
       renderDays(body, [], []);
       const msg = document.createElement('p');
       msg.className = 'weather-error';
+      // Which of the two it is matters: one asks the reader to try again, the
+      // other tells them nothing they do here will help until there is signal —
+      // and that the sun and moon below are theirs either way.
       msg.textContent =
-        'Couldn’t load the forecast. Check your connection and try again.';
+        navigator.onLine === false
+          ? 'No forecast saved on this device yet — it will load the next time you have signal. ' +
+            'The sunset and moon below are worked out on the device and need none.'
+          : 'Couldn’t load the forecast. Check your connection and try again.';
       body.prepend(msg);
       if (note) note.textContent = 'Forecast by Open-Meteo.';
     } else {

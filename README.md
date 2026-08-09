@@ -241,6 +241,39 @@ honest, a rescaled millimetre figure would only pretend to be. The report card
 is cached like the forecast itself, so the learned correction still applies on
 site with no signal.
 
+## Offline
+
+The citadel has no signal worth the name, and everything you need there has to
+be on the device before you climb the hill. The app is precached whole by its
+service worker, so after one visit it opens with the network switched off — the
+running order, picks, stars, filters, crew overlays, the journal and its recap,
+the calendar export, the shared-picks link, the share image and the app's own QR
+are all computed on the device and need nothing. Sunset, the moon and the
+opening night's eclipse are arithmetic ([`src/astro.ts`](src/astro.ts)), not a
+lookup. Your ticket is stored as page images in IndexedDB, so the gate never
+waits on a download.
+
+Two things do come from the network, and both are written to keep working
+without it:
+
+- **The forecast and the report card** are cached with their last good answer
+  and shown with the time they were fetched, so a stale sky still beats a blank
+  one. With nothing cached at all the panel says so and still draws the sun and
+  moon over each night.
+- **The PDF reader.** A ticket PDF is rasterised with pdf.js, which is nearly
+  two megabytes and has no business in the install of an app most people open to
+  read a running order — so it is left out of the precache and picked up by a
+  runtime cache rule instead. That would leave the reader missing at the one
+  place it is needed, so [`src/wallet.ts`](src/wallet.ts) fetches it ahead of
+  time: in the background on the way into the app, and again the moment the
+  ticket sheet is opened. The warm-up waits for the service worker to take the
+  page over — anything fetched before that goes straight past it and is never
+  cached — skips a connection that says it is metered or slow, and costs one
+  cache lookup once the reader is on the device. If a PDF is imported before any
+  of that happened, the app says the reader isn't on the device rather than
+  blaming the file, and points at the screenshot, which imports with no network
+  at all.
+
 ## Builds and updates
 
 Every build stamps its own timestamp and short commit into the bundle
