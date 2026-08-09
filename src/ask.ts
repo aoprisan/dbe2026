@@ -2,6 +2,7 @@ import {
   CURFEW,
   DAYS,
   FESTIVAL,
+  MUSIC_STARTS,
   NIGHTS,
   RUNNING_ORDER_ANNOUNCED,
   SET_MINUTES,
@@ -146,7 +147,7 @@ export function festivalBrief(includePicks: boolean): string {
   lines.push(`- Venue: ${FESTIVAL.location}.`);
   lines.push(`- Finding it: ${FESTIVAL.venueWhere} — you walk to it through the fortress.`);
   lines.push(
-    `- One stage only, so nothing on the bill clashes. Doors ${FESTIVAL.doors} local time (EEST, UTC+3).`,
+    `- One stage only, so nothing on the bill clashes. Doors ${FESTIVAL.doors} local time (EEST, UTC+3); the music starts at ${MUSIC_STARTS}.`,
   );
   lines.push(
     `- Hard finish between ${CURFEW.from} and ${CURFEW.to}: the venue's noise agreement with the police.`,
@@ -162,7 +163,7 @@ export function festivalBrief(includePicks: boolean): string {
   } else {
     lines.push('RUNNING ORDER (NOT YET OFFICIAL)');
     lines.push(
-      `The festival has published the bill per night and "starting at 6 PM", nothing more. The times below are this app's own provisional grid — roughly ${SET_MINUTES}-minute sets, roughly ${CHANGEOVER_MINUTES}-minute changeovers, laid backwards from the curfew, in poster order. Treat every time marked "provisional" as an estimate, not a timetable.`,
+      `The festival has published the bill per night and confirmed a ${MUSIC_STARTS} start, nothing more. The times below are this app's own provisional grid — roughly ${SET_MINUTES}-minute sets, roughly ${CHANGEOVER_MINUTES}-minute changeovers, laid forwards from that start and stopping short of the curfew, in poster order. Treat every time marked "provisional" as an estimate, not a timetable.`,
     );
   }
   lines.push('');

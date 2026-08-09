@@ -1,4 +1,4 @@
-import { DAYS, VENUE_SITE } from './data';
+import { DAYS, MUSIC_STARTS, VENUE_SITE } from './data';
 import {
   altitude,
   bisect,
@@ -19,7 +19,7 @@ import type { FestivalDay, NightId } from './types';
  * When the light goes.
  *
  * DBE is an open courtyard inside a fortress in the middle of August, and the
- * music starts at 18:00 — a good two and a half hours before the sun is off the
+ * music starts at 18:30 — a good two hours before the sun is off the
  * walls, which means the opening of every night happens in broad daylight and
  * the stage only really becomes a stage later on. Knowing when that is turns out to be the single most useful thing
  * this app can say about a night before it starts: it's when to be inside, when
@@ -138,7 +138,7 @@ export function sunsetLabel(at: Date): string {
 export function sunsetTitle(sun: DaySun): string {
   return (
     `The sun is off the horizon at ${festivalClock(sun.sunset)} local (EEST), and the last of the ` +
-    `light leaves the courtyard around ${festivalClock(sun.duskCivil)}. The music starts at 18:00, so ` +
+    `light leaves the courtyard around ${festivalClock(sun.duskCivil)}. The music starts at ${MUSIC_STARTS}, so ` +
     `the first stretch of the night runs in daylight. Standard flat-horizon sunset — the citadel walls ` +
     `will take the sun a few minutes earlier than that. Computed on the device, not fetched.`
   );
