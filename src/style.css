@@ -67,14 +67,19 @@ body {
 }
 
 /* ---------- header ---------- */
+/* Two rows: the mark, the title and the counters across the top, then the
+   dates, the venue and the clock along the full width under them. The second
+   row wraps because `.brand-meta` claims a whole line to itself. */
 .app-header {
   position: relative;
   display: flex;
-  align-items: flex-start;
+  flex-wrap: wrap;
+  align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  padding: 18px 16px 12px;
-  padding-top: max(18px, env(safe-area-inset-top));
+  column-gap: 12px;
+  row-gap: 6px;
+  padding: 14px 16px 12px;
+  padding-top: max(14px, env(safe-area-inset-top));
 }
 /* The poster's hairline rule under the masthead. */
 .app-header::after {
@@ -91,19 +96,27 @@ body {
 /* The festival emblem, left of the title. It is white line art on nothing, so
    it takes the page's own background and needs no plate behind it; the drop
    shadow is the same warm glow the accent colours use elsewhere, which stops
-   the mark from looking pasted on. */
+   the mark from looking pasted on. The art is trimmed to its own bounds in
+   logo.svg, so the box below is the size the mark actually draws at. */
 .brand-mark {
   flex: 0 0 auto;
-  width: 44px;
-  height: 44px;
-  margin-top: 2px;
+  width: 38px;
+  height: 38px;
   filter: drop-shadow(0 0 6px rgb(201 169 97 / 0.28));
 }
 
-/* With the mark in the row, the title takes the slack so the stats and the
-   help badge stay pinned to the far corner. */
+/* The title takes the slack in the top row so the stats and the help badge stay
+   pinned to the far corner. Basis zero rather than auto: on a phone the row has
+   no room for the whole name at its natural width, and an auto basis would push
+   the counters onto a line of their own instead of letting the name wrap. */
 .brand {
-  flex: 1 1 auto;
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+/* The second row: whatever is left of the masthead, across the full width. */
+.brand-meta {
+  flex: 1 0 100%;
   min-width: 0;
 }
 
@@ -122,7 +135,7 @@ body {
 }
 
 .brand-sub {
-  margin: 5px 0 0;
+  margin: 0; /* the header's row gap sets the distance to the title above */
   font-size: 0.7rem;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -3101,8 +3114,21 @@ body {
     font-size: 1.12rem;
   }
   .brand-mark {
-    width: 36px;
-    height: 36px;
+    width: 32px;
+    height: 32px;
+  }
+}
+
+/* The narrowest phones. The emblem and the counters leave the title about a
+   third of the top row, and at the size above it breaks after every word;
+   trimming the counters and the type a shade holds the name to two lines. */
+@media (max-width: 400px) {
+  .brand-name {
+    font-size: 1.02rem;
+  }
+  .stat {
+    min-width: 44px;
+    padding: 7px 8px;
   }
 }
 

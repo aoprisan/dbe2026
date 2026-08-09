@@ -276,8 +276,10 @@ await Promise.all([
   // like the standard icon.
   writeFile(resolve(publicDir, 'apple-touch-icon.png'), encodePng(180, renderIcon(180))),
   writeFile(resolve(publicDir, 'favicon.svg'), toSvg({ size: 64, rounded: 96 })),
-  // The masthead draws the mark on the page's own background, so no backdrop.
-  writeFile(resolve(publicDir, 'logo.svg'), toSvg({ size: 512, background: null })),
+  // The masthead draws the mark on the page's own background, so no backdrop —
+  // and trimmed to the ink, so the emblem fills the box the header gives it
+  // instead of leaving a margin of nothing between itself and the title.
+  writeFile(resolve(publicDir, 'logo.svg'), toSvg({ size: 512, background: null, trim: true })),
 ]);
 
 console.log('Generated the emblem into public/ (PWA icons, favicon, logo).');

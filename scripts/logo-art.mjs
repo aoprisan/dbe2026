@@ -242,10 +242,63 @@ export function shapes() {
 }
 
 /**
+ * The tightest square box that still holds every stroke, centred on the art.
+ *
+ * The 512 box the emblem is authored in carries margin on all four sides — room
+ * an installed icon wants, and dead space anywhere the mark is set beside type.
+ * This measures the ink itself (curves flattened, stroke width counted at the
+ * ends) so a caller can hand the emblem a viewBox with nothing to spare.
+ */
+export function inkBox() {
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+
+  for (const shape of shapes()) {
+    // A stroke is centred on its path, so it reaches half a width past it; the
+    // round caps and joins put no more than that anywhere. Fills stop at the path.
+    const reach = shape.fill ? 0 : shape.w / 2;
+
+    if (shape.c) {
+      const [cx, cy, r] = shape.c;
+      minX = Math.min(minX, cx - r - reach);
+      maxX = Math.max(maxX, cx + r + reach);
+      minY = Math.min(minY, cy - r - reach);
+      maxY = Math.max(maxY, cy + r + reach);
+      continue;
+    }
+
+    for (const subpath of flattenPath(shape.d)) {
+      for (const [x, y] of subpath) {
+        minX = Math.min(minX, x - reach);
+        maxX = Math.max(maxX, x + reach);
+        minY = Math.min(minY, y - reach);
+        maxY = Math.max(maxY, y + reach);
+      }
+    }
+  }
+
+  // Square, so the mark keeps its proportions in a square box and no
+  // preserveAspectRatio letterboxing puts the margin back.
+  const side = Math.max(maxX - minX, maxY - minY);
+  const round = (n) => Number(n.toFixed(2));
+  return {
+    x: round((minX + maxX) / 2 - side / 2),
+    y: round((minY + maxY) / 2 - side / 2),
+    side: round(side),
+  };
+}
+
+/**
  * The emblem as SVG markup, sized to `size` and inset by `pad` (a fraction of
  * the box) so callers can leave room for a maskable icon's safe area.
+ *
+ * `trim` swaps the authored 512 box for the ink's own bounds, which is what the
+ * masthead wants: there the mark is set beside type and has to fill the space it
+ * is given rather than float in the middle of it.
  */
-export function toSvg({ size = SIZE, background = '#08070a', ink = '#f7f4ef', pad = 0, rounded = 0 } = {}) {
+export function toSvg({ size = SIZE, background = '#08070a', ink = '#f7f4ef', pad = 0, rounded = 0, trim = false } = {}) {
   const scale = 1 - pad * 2;
   const body = shapes()
     .map((shape) => {
@@ -268,7 +321,9 @@ export function toSvg({ size = SIZE, background = '#08070a', ink = '#f7f4ef', pa
     ? '<g>'
     : `<g transform="translate(${(SIZE * pad * 2) / 2} ${(SIZE * pad * 2) / 2}) scale(${scale.toFixed(4)})">`;
 
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${SIZE} ${SIZE}" width="${size}" height="${size}" role="img" aria-label="Dark Bombastic Evening">
+  const box = trim ? inkBox() : { x: 0, y: 0, side: SIZE };
+
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${box.x} ${box.y} ${box.side} ${box.side}" width="${size}" height="${size}" role="img" aria-label="Dark Bombastic Evening">
   ${backdrop}${open}
     ${body}
   </g>

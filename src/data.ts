@@ -181,7 +181,7 @@ export function mapsUrl(): string {
  * dropped or re-timed). Returning visitors whose last-seen stamp differs get a
  * one-time "line-up updated" banner so stale plans don't go unnoticed.
  */
-export const DATA_VERSION = '2026-08-09';
+export const DATA_VERSION = '2026-08-09b';
 
 /**
  * The official running order has not been published yet — the posters give the
@@ -300,7 +300,7 @@ export const DAYS: FestivalDay[] = [
     date: '2026-08-15',
     sets: [
       { band: 'Opia', start: '18:30', end: '19:25', tba: true },
-      { band: 'Skuggsjá', start: '19:50', end: '20:45', tba: true },
+      { band: 'Skuggor', start: '19:50', end: '20:45', tba: true },
       { band: 'The Kilimanjaro Darkjazz Ensemble', start: '21:10', end: '22:05', tba: true },
       { band: "Old Man's Child", start: '22:30', end: '23:25', tba: true },
     ],
