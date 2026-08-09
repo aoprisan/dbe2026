@@ -3,6 +3,7 @@ import {
   CURFEW,
   DAYS,
   FESTIVAL,
+  MUSIC_STARTS,
   RUNNING_ORDER_ANNOUNCED,
   SET_MINUTES,
   doorSaleNote,
@@ -51,7 +52,7 @@ const BAND_NIGHTS = (['no', 'one', 'two', 'three', 'four', 'five'][DAYS.length -
 const FIRST_SET =
   DAYS.filter((day) => day.id !== 'ceremony')
     .flatMap((day) => day.sets.map((set) => set.start))
-    .sort()[0] ?? FESTIVAL.doors;
+    .sort()[0] ?? MUSIC_STARTS;
 
 const SECTIONS: Section[] = [
   {
@@ -60,7 +61,7 @@ const SECTIONS: Section[] = [
     body:
       `The tabs under the title move between the Opening Ceremony and the ${BAND_NIGHTS} band ` +
       `nights. ${FESTIVAL.shortName} plays a single stage, so a night is one running order read ` +
-      `top to bottom — the first set at ${FIRST_SET}, the start the poster promises, and the last ` +
+      `top to bottom — the first set at ${FIRST_SET}, the start the festival has confirmed, and the last ` +
       `note between ${CURFEW.from} and ${CURFEW.to}, which is the venue's noise limit rather than ` +
       `a soft target.`,
   },
@@ -280,7 +281,7 @@ function buildDialog(): HTMLDialogElement {
         'p',
         'guide-caveat',
         `Set times are provisional. Until the festival publishes its running order, the grid is ` +
-          `built from the poster's ${FESTIVAL.doors} start, the curfew and ~${CHANGEOVER_MINUTES}-` +
+          `built from the confirmed ${MUSIC_STARTS} start, the curfew and ~${CHANGEOVER_MINUTES}-` +
           `minute changeovers, which leaves ~${SET_MINUTES} minutes a set — the bill and the ` +
           `nights are from the official posters, the clock is an estimate, and every provisional ` +
           `time is marked with a ~.`,

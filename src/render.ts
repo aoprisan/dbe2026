@@ -720,7 +720,7 @@ function renderDiscoverHost(day: FestivalDay): void {
 /**
  * The sky over this night, under its date: when the sun goes, and what moon
  * replaces it. Four nights in an open courtyard inside a fortress, with the
- * music from 18:00 — so the first stretch of every night happens in daylight, and when
+ * music from 18:30 — so the first stretch of every night happens in daylight, and when
  * that daylight ends is part of what the evening will look like.
  */
 function renderNightSky(day: FestivalDay): HTMLElement {

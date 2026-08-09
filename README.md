@@ -92,13 +92,14 @@ The core festival details, nights, and set times live in
 [`src/data.ts`](src/data.ts). Band genres, countries, and curated listening links
 live in [`src/band-meta.ts`](src/band-meta.ts).
 
-Until the official running order lands, the provisional grid is pinned at both
-ends and filled in between. The poster's "starting at 6 PM" is taken as the
-first downbeat rather than as a gate an hour ahead of it, so the opening set is
-at 18:00; the last note is at 23:35, inside the 23:30–23:45 finish the venue has
-agreed with the police. Four bands across those 5h35m, with the ~25-minute
-changeovers a single stage needs, works out at 65-minute sets and a 90-minute
-cadence: 18:00, 19:30, 21:00, 22:30.
+Until the official running order lands, the provisional grid is laid forwards
+from the one time the festival has confirmed. The music starts at 18:30 — the
+poster's "starting at 6 PM" is the gate, half an hour ahead of it — and the
+night has to be over between 23:30 and 23:45, the finish the venue has agreed
+with the police. Four bands across that, with the ~25-minute changeovers a
+single stage needs, works out at 55-minute sets on an 80-minute cadence: 18:30,
+19:50, 21:10, 22:30, with the last note at 23:25, a few minutes short of the
+curfew rather than against its far edge.
 
 The Opening Ceremony is not on that grid. It is one staged piece rather than a
 bill of bands, and it stays at 21:00 — after dark, which is what a masked and
@@ -174,7 +175,7 @@ sent", and it only travels when the person taps through to an assistant.
 
 ## The sky over the citadel
 
-The music starts at 18:00 and the sun does not leave a mid-August evening in Alba Iulia
+The music starts at 18:30 and the sun does not leave a mid-August evening in Alba Iulia
 until well past 20:30, so the first stretch of every night happens in daylight.
 [`src/sun.ts`](src/sun.ts) says when that ends, [`src/moon.ts`](src/moon.ts) says
 what replaces it, and [`src/astro.ts`](src/astro.ts) holds the spherical

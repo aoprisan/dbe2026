@@ -20,7 +20,7 @@ import type { FestivalDay, NightId } from './types';
  * long before the deep phase arrives. What the courtyard actually gets is the
  * better half of that trade for anyone already standing in it: the sun goes
  * down *with a bite taken out of it*, low over the western wall, in the hour
- * in the hour before the first performance.
+ * before the first performance.
  *
  * Nothing about that is hardcoded. This module asks the same question of all
  * four nights — is the moon in front of the sun here, and is the sun still up —
