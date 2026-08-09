@@ -3,7 +3,7 @@ import { mount, renderAskLink, renderOfficialLinks } from './render';
 import { init as initNotifications } from './notify';
 import { importPicksFromUrl } from './picks-link';
 import { maybeOpenGuide } from './guide';
-import { loadWallet } from './wallet';
+import { loadWallet, warmTicketReaderWhenIdle } from './wallet';
 import { initServiceWorker, renderBuildInfo } from './update';
 
 // Import picks shared via a `#p=…` link before the first render so the app
@@ -20,6 +20,12 @@ if (app) {
   // Read any imported tickets off the device so the night headers can offer
   // them; the render subscribes and repaints when they arrive.
   void loadWallet();
+
+  // The PDF reader is the one part of this app that is fetched rather than
+  // installed, and the one place it is needed — the gate — is the place with no
+  // signal. Bring it over in the background now, while there is a network to
+  // bring it over, so importing a ticket on the hill works like everything else.
+  warmTicketReaderWhenIdle();
 
   const footer = document.createElement('footer');
   footer.className = 'app-footer';

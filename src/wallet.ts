@@ -1,3 +1,4 @@
+import pdfWorkerUrl from 'pdfjs-dist/legacy/build/pdf.worker.min.mjs?url';
 import { DAYS } from './data';
 import type { NightId } from './types';
 
@@ -21,6 +22,14 @@ const STORE = 'tickets';
 const MAX_PAGES = 4;
 /** Rendered page width in device pixels — sharp enough for a gate scanner. */
 const PAGE_WIDTH = 1400;
+
+/**
+ * The service worker's runtime cache for pdf.js — must match the `cacheName` on
+ * the pdf rule in vite.config.ts, which is what puts the reader there.
+ */
+const PDF_CACHE = 'pdfjs';
+/** How long a warm-up waits for the service worker to take the page over. */
+const CONTROL_WAIT_MS = 20_000;
 
 /**
  * What a ticket admits you to. Most people buy the pass — DBE sells the four
@@ -218,7 +227,18 @@ export async function importTicketFile(file: File): Promise<WalletTicket> {
     } else {
       pages = [file];
     }
-  } catch {
+  } catch (err) {
+    // Blaming the file would be a lie when the reader simply isn't on the
+    // device — and the way out of that one is a screenshot, which needs
+    // nothing fetched at all.
+    if (err instanceof ReaderUnavailableError) {
+      throw new TicketImportError(
+        navigator.onLine === false
+          ? 'The PDF reader isn’t on this device yet, and there’s no signal to fetch it. ' +
+            'A photo or screenshot of the ticket imports fine offline.'
+          : 'Couldn’t fetch the PDF reader. A photo or screenshot of the ticket works just as well.',
+      );
+    }
     throw new TicketImportError(
       isPdf
         ? "That PDF couldn't be opened. A screenshot of the ticket works just as well."
@@ -257,20 +277,132 @@ function newId(): string {
   return uuid ?? `t${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
 }
 
+/* ---------- the PDF reader, and getting it onto the device in time ---------- */
+
+/** Thrown when pdf.js itself could not be brought onto the device. */
+class ReaderUnavailableError extends Error {}
+
+type PdfModule = typeof import('pdfjs-dist/legacy/build/pdf.mjs');
+
+let readerPromise: Promise<PdfModule> | null = null;
+
+/**
+ * pdf.js is shipped in its legacy build so older iOS Safari can open a ticket
+ * too, and it is loaded on demand: nearly two megabytes of reader has no
+ * business in the install of an app most people open to look at a running
+ * order. It is kept out of the precache and picked up by a runtime cache rule
+ * instead (see vite.config.ts), which means the copy on the device is only as
+ * good as the last time this ran with a network.
+ *
+ * That matters more here than the usual lazy-chunk story: the gate is the one
+ * place with no signal and the one place the ticket has to open, so the reader
+ * is fetched ahead of the moment it is needed rather than at it — see
+ * `warmTicketReader`. Loading it means the code *and* the worker file, which
+ * pdf.js otherwise only asks for when it opens its first document; fetching it
+ * here is what puts it in the cache while there is still something to fetch it
+ * over.
+ */
+function loadReader(): Promise<PdfModule> {
+  if (!readerPromise) {
+    readerPromise = (async () => {
+      const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs');
+      pdfjs.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
+      const worker = await fetch(pdfWorkerUrl);
+      if (!worker.ok) throw new Error(`worker HTTP ${worker.status}`);
+      return pdfjs;
+    })().catch((err: unknown) => {
+      // Not remembered as a failure: this is usually a missing network, and the
+      // next attempt may well have one.
+      readerPromise = null;
+      throw new ReaderUnavailableError(String(err));
+    });
+  }
+  return readerPromise;
+}
+
+/**
+ * Wait until the service worker is actually in charge of this page.
+ *
+ * Warming before then buys nothing: on a first visit the worker is still
+ * installing when the app finishes loading, and anything fetched in that window
+ * goes past it and is never written to the cache — a megabyte and a half spent
+ * on a copy that isn't there at the gate. Resolves false where no worker will
+ * ever answer, in which case there is nothing to warm for.
+ */
+function controlled(): Promise<boolean> {
+  if (!('serviceWorker' in navigator)) return Promise.resolve(false);
+  if (navigator.serviceWorker.controller) return Promise.resolve(true);
+  return new Promise((resolve) => {
+    const settle = (): void => {
+      window.clearTimeout(timer);
+      navigator.serviceWorker.removeEventListener('controllerchange', settle);
+      resolve(navigator.serviceWorker.controller != null);
+    };
+    const timer = window.setTimeout(settle, CONTROL_WAIT_MS);
+    navigator.serviceWorker.addEventListener('controllerchange', settle);
+  });
+}
+
+/** Is the reader already on the device, cached by the service worker? */
+async function readerCached(): Promise<boolean> {
+  if (readerPromise) return true;
+  if (!('caches' in window)) return false;
+  try {
+    // The worker is fetched last, so its presence means the whole reader landed.
+    const cache = await caches.open(PDF_CACHE);
+    return (await cache.match(pdfWorkerUrl)) != null;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Put the PDF reader on the device now, so a ticket can be imported later with
+ * no signal at all. Cheap to call repeatedly: once the reader is cached this
+ * costs one cache lookup and touches neither the network nor the parser.
+ */
+export async function warmTicketReader(): Promise<void> {
+  if (navigator.onLine === false) return;
+  if (readerPromise) return;
+  if (!(await controlled())) return;
+  if (await readerCached()) return;
+  try {
+    await loadReader();
+  } catch {
+    /* no signal, or the fetch fell over — the import path says so if it comes to that */
+  }
+}
+
+interface NetworkInformation {
+  saveData?: boolean;
+  effectiveType?: string;
+}
+
+/**
+ * The same warm-up, but as a background chore on the way into the app rather
+ * than something anyone waits for. Held back on a connection that says it is
+ * metered or slow — someone on 2G in the citadel should not spend it on a file
+ * they may never need, and opening the ticket sheet warms it anyway.
+ */
+export function warmTicketReaderWhenIdle(): void {
+  const conn = (navigator as Navigator & { connection?: NetworkInformation }).connection;
+  if (conn?.saveData) return;
+  if (conn?.effectiveType && /(^|-)2g$/.test(conn.effectiveType)) return;
+
+  const run = (): void => void warmTicketReader();
+  if (typeof requestIdleCallback === 'function') requestIdleCallback(run, { timeout: 10_000 });
+  else window.setTimeout(run, 5_000);
+}
+
 /**
  * Rasterise the PDF once, here, rather than keeping a viewer on the hot path:
  * at the gate the ticket has to be on screen before the person behind you sighs.
  *
- * pdf.js is pulled in on demand and shipped in its legacy build so older iOS
- * Safari can open a ticket too. No cmaps or standard-font data are bundled —
- * ticket PDFs embed their fonts, and the barcode is vector art either way.
+ * No cmaps or standard-font data are bundled — ticket PDFs embed their fonts,
+ * and the barcode is vector art either way.
  */
 async function renderPdf(file: File): Promise<{ pages: Blob[]; text: string }> {
-  const [pdfjs, worker] = await Promise.all([
-    import('pdfjs-dist/legacy/build/pdf.mjs'),
-    import('pdfjs-dist/legacy/build/pdf.worker.min.mjs?url'),
-  ]);
-  pdfjs.GlobalWorkerOptions.workerSrc = worker.default;
+  const pdfjs = await loadReader();
 
   const data = new Uint8Array(await file.arrayBuffer());
   const doc = await pdfjs.getDocument({ data, isEvalSupported: false }).promise;
