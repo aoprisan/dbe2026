@@ -166,6 +166,18 @@ export function mount(root: HTMLElement): void {
 
 function renderHeader(): HTMLElement {
   const header = el('header', 'app-header');
+
+  // The festival's own mark, the same artwork the app installs as its icon, so
+  // the masthead and the home screen agree about what this app is. Decorative:
+  // the name is right beside it in text, so the alt stays empty.
+  const mark = el('img', 'brand-mark');
+  mark.src = `${import.meta.env.BASE_URL}logo.svg`;
+  mark.alt = '';
+  mark.width = 44;
+  mark.height = 44;
+  mark.decoding = 'async';
+  header.appendChild(mark);
+
   const title = el('div', 'brand');
   title.appendChild(el('h1', 'brand-name', FESTIVAL.name));
   const sub = el('p', 'brand-sub');
