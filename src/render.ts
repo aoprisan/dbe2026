@@ -180,17 +180,24 @@ function renderHeader(): HTMLElement {
 
   const title = el('div', 'brand');
   title.appendChild(el('h1', 'brand-name', FESTIVAL.name));
+
+  // The dates, the venue and the clock sit on a line of their own under the top
+  // row rather than in the title's column. On a phone that column is what is
+  // left of the width after the mark and the counters, and the venue block
+  // wrapped into four or five lines inside it — a masthead taller than the first
+  // set of the night. Given the full width they are two.
+  const meta = el('div', 'brand-meta');
   const sub = el('p', 'brand-sub');
   // No "·" before the link: it takes a line of its own, and a separator left
   // stranded at the end of this one reads as a typo. The pin separates instead.
   sub.append(`${FESTIVAL.edition} · ${FESTIVAL.dates}`);
   sub.appendChild(renderMapLink());
-  title.appendChild(sub);
+  meta.appendChild(sub);
 
   // Live wall clock — the current date and time, ticking while the app is open.
   const clock = el('p', 'brand-clock');
   clock.id = 'header-clock';
-  title.appendChild(clock);
+  meta.appendChild(clock);
 
   header.appendChild(title);
 
@@ -204,6 +211,8 @@ function renderHeader(): HTMLElement {
 
   right.appendChild(renderGuideBadge());
   header.appendChild(right);
+
+  header.appendChild(meta);
   return header;
 }
 
