@@ -85,6 +85,11 @@ function selectedSlots(): SetSlot[] {
 }
 
 export function mount(root: HTMLElement): void {
+  // Picks are stored by night and band name, so a line-up correction can leave
+  // one behind pointing at a set that is no longer on the bill. Clear those out
+  // before anything counts or draws them.
+  selection.retain(new Set(ALL_SLOTS.map((s) => s.id)));
+
   root.innerHTML = '';
   root.appendChild(renderHeader());
   root.appendChild(renderDayTabs());

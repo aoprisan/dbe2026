@@ -80,10 +80,10 @@ export const BAND_META: Record<string, BandMeta> = {
     from: 'UK / Spain',
     listen: 'https://hammerheart.bandcamp.com/album/i-welcome-thee-eternal-sleep',
   },
-  Skuggsjá: {
-    genre: 'Norse folk / black metal',
-    from: 'Norway',
-    listen: 'https://skuggsja.bandcamp.com/',
+  Skuggor: {
+    genre: 'Atmospheric black metal / ambient',
+    from: 'Sweden',
+    listen: 'https://skuggor.bandcamp.com/',
   },
   'The Kilimanjaro Darkjazz Ensemble': {
     genre: 'Dark jazz / cinematic doom',

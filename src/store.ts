@@ -75,6 +75,24 @@ class SelectionStore {
     this.persist();
   }
 
+  /**
+   * Drop picks that no longer name a set on the bill.
+   *
+   * A pick id is night plus band name, so a line-up correction — a band renamed
+   * or dropped — strands whatever was picked under the old name. The set itself
+   * is gone from every list that resolves ids to sets, but `size()` counts the
+   * ids themselves, so a stranded pick would sit in the header's counter with
+   * nothing on any night to point at. The caller owns the line-up, so it passes
+   * the ids that still exist rather than this file reaching for the data.
+   */
+  retain(valid: ReadonlySet<string>): void {
+    const kept = [...this.selected].filter((id) => valid.has(id));
+    if (kept.length === this.selected.size) return;
+    this.selected = new Set(kept);
+    this.starred = new Set([...this.starred].filter((id) => this.selected.has(id)));
+    this.persist();
+  }
+
   subscribe(fn: Listener): () => void {
     this.listeners.add(fn);
     return () => this.listeners.delete(fn);
