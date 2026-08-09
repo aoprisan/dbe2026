@@ -1,180 +1,223 @@
+/**
+ * Rasterises the festival emblem (scripts/logo-art.mjs) into the PNG icons the
+ * PWA installs with, and writes the SVG favicon and masthead logo from the same
+ * source. Run by `npm run icons`, which the build runs for you.
+ *
+ * There is no image library here on purpose — the repo installs a compiler and
+ * a bundler and nothing else. The emblem is line art, so it rasterises well
+ * with a round brush: coverage is accumulated at 3x into a float mask, the mask
+ * is box-filtered down to the icon size, and the ink is composited over the
+ * background once at the end. Doing it in that order keeps overlapping strokes
+ * from stacking into bright seams, and gives the edges their antialiasing for
+ * free.
+ */
+
 import { deflateSync } from 'node:zlib';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { SIZE, flattenPath, shapes, toSvg } from './logo-art.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const publicDir = resolve(root, 'public');
 
-const GLYPHS = {
-  D: ['11110', '10001', '10001', '10001', '10001', '10001', '11110'],
-  B: ['11110', '10001', '10001', '11110', '10001', '10001', '11110'],
-  E: ['11111', '10000', '10000', '11110', '10000', '10000', '11111'],
-  1: ['00100', '01100', '00100', '00100', '00100', '00100', '01110'],
-  2: ['01110', '10001', '00001', '00010', '00100', '01000', '11111'],
-};
+const SUPERSAMPLE = 3;
+const BACKGROUND = [8, 7, 10]; // #08070a — the app's own backdrop
+const INK = [247, 244, 239]; // warm white, as the mark is printed
 
 function clamp(value, min = 0, max = 1) {
   return Math.max(min, Math.min(max, value));
 }
 
-function mix(a, b, amount) {
-  return Math.round(a + (b - a) * clamp(amount));
-}
+/* ---------------------------- coverage mask ---------------------------- */
 
-function blendPixel(buffer, width, x, y, color, alpha = 1) {
-  x = Math.floor(x);
-  y = Math.floor(y);
-  if (x < 0 || x >= width || y < 0 || y >= width) return;
+/** Round brush: stamp a soft disc of `radius` and keep the strongest coverage. */
+function stamp(mask, width, cx, cy, radius) {
+  const minX = Math.max(0, Math.floor(cx - radius - 1));
+  const maxX = Math.min(width - 1, Math.ceil(cx + radius + 1));
+  const minY = Math.max(0, Math.floor(cy - radius - 1));
+  const maxY = Math.min(width - 1, Math.ceil(cy + radius + 1));
 
-  const offset = (y * width + x) * 4;
-  const a = clamp(alpha);
-  buffer[offset] = mix(buffer[offset], color[0], a);
-  buffer[offset + 1] = mix(buffer[offset + 1], color[1], a);
-  buffer[offset + 2] = mix(buffer[offset + 2], color[2], a);
-  buffer[offset + 3] = 255;
-}
-
-function fillRect(buffer, width, x, y, rectWidth, rectHeight, color) {
-  for (let py = Math.floor(y); py < Math.ceil(y + rectHeight); py += 1) {
-    for (let px = Math.floor(x); px < Math.ceil(x + rectWidth); px += 1) {
-      blendPixel(buffer, width, px, py, color);
+  for (let y = minY; y <= maxY; y += 1) {
+    for (let x = minX; x <= maxX; x += 1) {
+      const distance = Math.hypot(x + 0.5 - cx, y + 0.5 - cy);
+      const alpha = clamp(radius + 0.5 - distance);
+      if (alpha <= 0) continue;
+      const offset = y * width + x;
+      if (alpha > mask[offset]) mask[offset] = alpha;
     }
   }
 }
 
-function drawText(buffer, width, text, centerX, top, cell, color) {
-  const spacing = cell;
-  const glyphWidth = cell * 5;
-  const totalWidth = text.length * glyphWidth + (text.length - 1) * spacing;
-  let cursor = centerX - totalWidth / 2;
+/** Walk a polyline, stamping often enough that the discs overlap into a line. */
+function strokePolyline(mask, width, points, radius) {
+  if (points.length === 1) {
+    stamp(mask, width, points[0][0], points[0][1], radius);
+    return;
+  }
 
-  for (const character of text) {
-    const glyph = GLYPHS[character];
-    for (let row = 0; row < glyph.length; row += 1) {
-      for (let col = 0; col < glyph[row].length; col += 1) {
-        if (glyph[row][col] === '1') {
-          fillRect(buffer, width, cursor + col * cell, top + row * cell, cell, cell, color);
-        }
+  for (let i = 1; i < points.length; i += 1) {
+    const [x0, y0] = points[i - 1];
+    const [x1, y1] = points[i];
+    const length = Math.hypot(x1 - x0, y1 - y0);
+    const steps = Math.max(1, Math.ceil(length / 0.4));
+    for (let step = 0; step <= steps; step += 1) {
+      const t = step / steps;
+      stamp(mask, width, x0 + (x1 - x0) * t, y0 + (y1 - y0) * t, radius);
+    }
+  }
+}
+
+/** Non-zero scanline fill. Edges come out hard here and soften on downsample. */
+function fillPolygons(mask, width, polygons) {
+  const edges = [];
+  let minY = Infinity;
+  let maxY = -Infinity;
+
+  for (const polygon of polygons) {
+    for (let i = 0; i < polygon.length; i += 1) {
+      const [x0, y0] = polygon[i];
+      const [x1, y1] = polygon[(i + 1) % polygon.length];
+      if (y0 === y1) continue;
+      edges.push([x0, y0, x1, y1]);
+      minY = Math.min(minY, y0, y1);
+      maxY = Math.max(maxY, y0, y1);
+    }
+  }
+  if (!edges.length) return;
+
+  const from = Math.max(0, Math.floor(minY));
+  const to = Math.min(width - 1, Math.ceil(maxY));
+
+  for (let y = from; y <= to; y += 1) {
+    const scanY = y + 0.5;
+    const crossings = [];
+    for (const [x0, y0, x1, y1] of edges) {
+      if (scanY < Math.min(y0, y1) || scanY >= Math.max(y0, y1)) continue;
+      crossings.push({
+        x: x0 + ((scanY - y0) / (y1 - y0)) * (x1 - x0),
+        winding: y1 > y0 ? 1 : -1,
+      });
+    }
+    if (crossings.length < 2) continue;
+    crossings.sort((a, b) => a.x - b.x);
+
+    let winding = 0;
+    for (let i = 0; i < crossings.length - 1; i += 1) {
+      winding += crossings[i].winding;
+      if (winding === 0) continue;
+      const spanStart = Math.max(0, Math.round(crossings[i].x));
+      const spanEnd = Math.min(width - 1, Math.round(crossings[i + 1].x) - 1);
+      for (let x = spanStart; x <= spanEnd; x += 1) mask[y * width + x] = 1;
+    }
+  }
+}
+
+/** Circles are drawn directly rather than approximated with beziers. */
+function circle(mask, width, cx, cy, radius, strokeRadius, filled) {
+  if (filled) {
+    const minX = Math.max(0, Math.floor(cx - radius - 1));
+    const maxX = Math.min(width - 1, Math.ceil(cx + radius + 1));
+    const minY = Math.max(0, Math.floor(cy - radius - 1));
+    const maxY = Math.min(width - 1, Math.ceil(cy + radius + 1));
+    for (let y = minY; y <= maxY; y += 1) {
+      for (let x = minX; x <= maxX; x += 1) {
+        const alpha = clamp(radius + 0.5 - Math.hypot(x + 0.5 - cx, y + 0.5 - cy));
+        const offset = y * width + x;
+        if (alpha > mask[offset]) mask[offset] = alpha;
       }
     }
-    cursor += glyphWidth + spacing;
+    return;
   }
+
+  const steps = Math.max(48, Math.ceil(radius * 2));
+  const points = [];
+  for (let step = 0; step <= steps; step += 1) {
+    const angle = (step / steps) * Math.PI * 2;
+    points.push([cx + Math.cos(angle) * radius, cy + Math.sin(angle) * radius]);
+  }
+  strokePolyline(mask, width, points, strokeRadius);
 }
 
-function renderIcon(size, maskable = false) {
-  const scale = 3;
-  const width = size * scale;
-  const pixels = Buffer.alloc(width * width * 4);
-  const center = width / 2;
-  const safeScale = maskable ? 0.82 : 1;
+/** The emblem's coverage at `width` pixels, drawn inset by `pad` of the box. */
+function renderMask(width, pad) {
+  const mask = new Float32Array(width * width);
+  const scale = ((1 - pad * 2) * width) / SIZE;
+  const offset = (width * pad * 2) / 2;
+  const project = ([x, y]) => [x * scale + offset, y * scale + offset];
 
-  for (let y = 0; y < width; y += 1) {
-    for (let x = 0; x < width; x += 1) {
-      const dx = (x - center) / width;
-      const dy = (y - center) / width;
-      const distance = Math.sqrt(dx * dx + dy * dy);
-      const glow = clamp(1 - distance / 0.7);
-      const ember = clamp(1 - Math.sqrt(dx * dx + (dy + 0.34) ** 2) / 0.45);
-      const noise = ((x * 17 + y * 31) % 23) / 255;
-      const offset = (y * width + x) * 4;
-
-      pixels[offset] = mix(8, 31, glow * 0.52 + ember * 0.24 + noise);
-      pixels[offset + 1] = mix(7, 17, glow * 0.42 + noise);
-      pixels[offset + 2] = mix(10, 37, glow * 0.62 + noise);
-      pixels[offset + 3] = 255;
+  for (const shape of shapes()) {
+    if (shape.c) {
+      const [cx, cy, r] = shape.c;
+      const [px, py] = project([cx, cy]);
+      circle(mask, width, px, py, r * scale, ((shape.w ?? 0) / 2) * scale, Boolean(shape.fill));
+      continue;
     }
+
+    const polylines = flattenPath(shape.d).map((points) => points.map(project));
+    if (shape.fill) fillPolygons(mask, width, polylines);
+    else for (const points of polylines) strokePolyline(mask, width, points, (shape.w / 2) * scale);
   }
 
-  const ringRadius = width * 0.365 * safeScale;
-  const ringThickness = width * 0.012 * safeScale;
-  const gold = [205, 173, 102];
-  const warmGold = [234, 199, 118];
-  const ink = [13, 10, 15];
-
-  for (let y = 0; y < width; y += 1) {
-    for (let x = 0; x < width; x += 1) {
-      const distance = Math.hypot(x - center, y - center);
-      const ringDistance = Math.abs(distance - ringRadius);
-      if (ringDistance <= ringThickness) {
-        blendPixel(pixels, width, x, y, gold, 1 - ringDistance / ringThickness);
-      }
-      if (distance < ringRadius - ringThickness * 2) {
-        const innerGlow = clamp(1 - distance / ringRadius);
-        blendPixel(pixels, width, x, y, [20, 13, 25], 0.12 + innerGlow * 0.18);
-      }
-    }
-  }
-
-  const flameY = center - ringRadius * 0.7;
-  const flameHeight = width * 0.13 * safeScale;
-  const flameWidth = width * 0.055 * safeScale;
-  for (let y = flameY - flameHeight / 2; y <= flameY + flameHeight / 2; y += 1) {
-    for (let x = center - flameWidth; x <= center + flameWidth; x += 1) {
-      const nx = (x - center) / flameWidth;
-      const ny = (y - flameY) / (flameHeight / 2);
-      const taper = ny < 0 ? 1 + ny * 0.72 : 1 - ny * 0.42;
-      const inside = nx * nx + ny * ny * 0.72 < taper * taper;
-      if (inside) {
-        const heat = clamp(1 - Math.hypot(nx, ny * 0.7));
-        blendPixel(pixels, width, x, y, warmGold, 0.72 + heat * 0.28);
-      }
-    }
-  }
-
-  const dbeCell = width * 0.031 * safeScale;
-  const yearCell = width * 0.024 * safeScale;
-  drawText(pixels, width, 'DBE', center, center - width * 0.10 * safeScale, dbeCell, warmGold);
-  fillRect(
-    pixels,
-    width,
-    center - width * 0.19 * safeScale,
-    center + width * 0.145 * safeScale,
-    width * 0.38 * safeScale,
-    Math.max(2, width * 0.006 * safeScale),
-    gold,
-  );
-  drawText(pixels, width, '12', center, center + width * 0.19 * safeScale, yearCell, gold);
-
-  // Darken a small central notch so the flame reads crisply at favicon size.
-  fillRect(
-    pixels,
-    width,
-    center - width * 0.008 * safeScale,
-    flameY + flameHeight * 0.09,
-    width * 0.016 * safeScale,
-    flameHeight * 0.28,
-    ink,
-  );
-
-  return downsample(pixels, width, size);
+  return mask;
 }
 
-function downsample(source, sourceWidth, targetWidth) {
+/** Box-filter the supersampled mask down to the icon size. */
+function downsampleMask(source, sourceWidth, targetWidth) {
   const ratio = sourceWidth / targetWidth;
-  const output = Buffer.alloc(targetWidth * targetWidth * 4);
+  const output = new Float32Array(targetWidth * targetWidth);
 
   for (let y = 0; y < targetWidth; y += 1) {
     for (let x = 0; x < targetWidth; x += 1) {
-      const sums = [0, 0, 0, 0];
+      let total = 0;
       for (let sy = 0; sy < ratio; sy += 1) {
         for (let sx = 0; sx < ratio; sx += 1) {
-          const sourceOffset = ((y * ratio + sy) * sourceWidth + x * ratio + sx) * 4;
-          for (let channel = 0; channel < 4; channel += 1) {
-            sums[channel] += source[sourceOffset + channel];
-          }
+          total += source[(y * ratio + sy) * sourceWidth + x * ratio + sx];
         }
       }
-      const targetOffset = (y * targetWidth + x) * 4;
-      const samples = ratio * ratio;
-      for (let channel = 0; channel < 4; channel += 1) {
-        output[targetOffset + channel] = Math.round(sums[channel] / samples);
-      }
+      output[y * targetWidth + x] = total / (ratio * ratio);
     }
   }
 
   return output;
 }
+
+/**
+ * Ink over background. The backdrop is not flat black: it lifts very slightly
+ * behind the mark, the way the emblem sits on the poster, which also stops the
+ * icon from disappearing into a dark home screen.
+ */
+function composite(mask, size) {
+  const pixels = Buffer.alloc(size * size * 4);
+  const center = size / 2;
+
+  for (let y = 0; y < size; y += 1) {
+    for (let x = 0; x < size; x += 1) {
+      const distance = Math.hypot(x - center, y - center) / size;
+      const glow = clamp(1 - distance / 0.62) ** 2;
+      const offset = (y * size + x) * 4;
+      const coverage = clamp(mask[y * size + x]);
+
+      for (let channel = 0; channel < 3; channel += 1) {
+        const base = BACKGROUND[channel] + glow * [14, 11, 18][channel];
+        pixels[offset + channel] = Math.round(base + (INK[channel] - base) * coverage);
+      }
+      pixels[offset + 3] = 255;
+    }
+  }
+
+  return pixels;
+}
+
+function renderIcon(size, maskable = false) {
+  // A maskable icon may be cropped to a circle inscribed in the middle 80%, so
+  // the mark is pulled in to sit inside that safe area.
+  const pad = maskable ? 0.14 : 0.05;
+  const width = size * SUPERSAMPLE;
+  return composite(downsampleMask(renderMask(width, pad), width, size), size);
+}
+
+/* -------------------------------- PNG -------------------------------- */
 
 function crc32(buffer) {
   let crc = 0xffffffff;
@@ -218,15 +261,7 @@ function encodePng(width, rgba) {
   ]);
 }
 
-const favicon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <rect width="64" height="64" rx="12" fill="#08070a"/>
-  <circle cx="32" cy="32" r="24" fill="#140d19" stroke="#c9a961" stroke-width="2"/>
-  <path d="M32 8c5 7 6 11 0 17-6-6-5-10 0-17Z" fill="#eac776"/>
-  <text x="32" y="39" fill="#eac776" font-family="Arial,sans-serif" font-size="13" font-weight="700" text-anchor="middle">DBE</text>
-  <path d="M19 43h26" stroke="#c9a961"/>
-  <text x="32" y="54" fill="#c9a961" font-family="Arial,sans-serif" font-size="8" font-weight="700" text-anchor="middle">12</text>
-</svg>
-`;
+/* ------------------------------- output ------------------------------- */
 
 await mkdir(publicDir, { recursive: true });
 await Promise.all([
@@ -236,8 +271,13 @@ await Promise.all([
     resolve(publicDir, 'icon-maskable-512.png'),
     encodePng(512, renderIcon(512, true)),
   ),
+  // iOS does not round the corners of a transparent icon for you, and it does
+  // not apply a maskable safe area either — so this one is square and padded
+  // like the standard icon.
   writeFile(resolve(publicDir, 'apple-touch-icon.png'), encodePng(180, renderIcon(180))),
-  writeFile(resolve(publicDir, 'favicon.svg'), favicon),
+  writeFile(resolve(publicDir, 'favicon.svg'), toSvg({ size: 64, rounded: 96 })),
+  // The masthead draws the mark on the page's own background, so no backdrop.
+  writeFile(resolve(publicDir, 'logo.svg'), toSvg({ size: 512, background: null })),
 ]);
 
-console.log('Generated PWA icons in public/.');
+console.log('Generated the emblem into public/ (PWA icons, favicon, logo).');

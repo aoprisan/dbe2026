@@ -80,6 +80,15 @@ npm run build
 The build performs a TypeScript check, generates the PWA icons, and writes the
 deployable site to `dist/`.
 
+## The emblem
+
+The festival's mark — the ornate mask with the star between its eyes — is
+authored as vector art in [`scripts/logo-art.mjs`](scripts/logo-art.mjs), one
+half of it, mirrored about the centre line. `npm run icons` (which the build
+runs for you) rasterises it into the installed PWA icons and writes
+`public/favicon.svg` and `public/logo.svg`, the latter being what the masthead
+draws. Edit the paths in that one file and every size follows.
+
 Preview the production build locally:
 
 ```bash
