@@ -6,6 +6,7 @@ import {
   festivalInstant,
   getSlot,
   minutesToLabel,
+  nightForNow,
 } from './schedule';
 import { moonLabel, moonTitle, nightMoon } from './moon';
 import { sunForDay, sunsetLabel, sunsetTitle } from './sun';
@@ -52,7 +53,11 @@ import { openTicketViewer, openWallet, openWalletSheet } from './wallet-ui';
 // and action pills, and longer sets simply get taller.
 const PX_PER_MIN = 2;
 
-let activeDayId = loadActiveDay(DAYS[0].id);
+// Which night the clock says is on, and which one the sheet is showing. The
+// app opens on tonight — before the run that is the opening night, after it the
+// one it closed with — and only sits on another night because it was asked to.
+let tonightId = nightForNow();
+let activeDayId = loadActiveDay(tonightId);
 let onlyPicks = false;
 // The filters / options / discovery panel under the night tabs is folded away
 // by default; the header keeps showing live counts while it's closed.
@@ -156,12 +161,22 @@ export function mount(root: HTMLElement): void {
   // forward on their own while the app sits open all evening.
   window.setInterval(renderClock, 1_000);
   window.setInterval(() => {
+    if (followTonight()) {
+      refreshChrome();
+      renderContent(main);
+    }
     positionNowLine();
     renderLiveBar();
     updateJournalDot(); // sets finish while the app sits open
   }, 30_000);
   document.addEventListener('visibilitychange', () => {
     if (!document.hidden) {
+      // Coming back to a phone that was pocketed overnight: the night may have
+      // turned over while nothing was ticking.
+      if (followTonight()) {
+        refreshChrome();
+        renderContent(main);
+      }
       renderClock();
       positionNowLine();
       renderLiveBar();
@@ -311,7 +326,7 @@ function renderDayTabs(): HTMLElement {
     if (day.id === activeDayId) btn.classList.add('active');
     btn.addEventListener('click', () => {
       activeDayId = day.id;
-      saveActiveDay(day.id);
+      saveActiveDay(day.id, tonightId);
       refreshChrome();
       renderContent(document.getElementById('content') as HTMLElement);
     });
@@ -697,6 +712,25 @@ function updateJournalDot(): void {
   const btn = document.getElementById('journal-btn');
   if (!btn) return;
   btn.classList.toggle('has-dot', unratedCount(Date.now()) > 0);
+}
+
+/**
+ * Move the tabs on when the clock does.
+ *
+ * This app is installed and lives through the whole run without ever being
+ * closed, so the night it was opened on is not always the night now playing.
+ * At the 08:00 rollover — where the small-hours sets finally end and the next
+ * evening's date takes over — the sheet follows. A tab tapped for the night
+ * that just ended does not come with it: that was a choice about that night,
+ * and that night is over. Returns whether anything on screen needs redrawing.
+ */
+function followTonight(): boolean {
+  const now = nightForNow();
+  if (now === tonightId) return false;
+  tonightId = now;
+  if (activeDayId === now) return false;
+  activeDayId = now;
+  return true;
 }
 
 function refreshChrome(): void {
@@ -1462,7 +1496,7 @@ function jumpToSlot(slot: SetSlot): void {
   }
   if (activeDayId !== slot.dayId) {
     activeDayId = slot.dayId;
-    saveActiveDay(slot.dayId);
+    saveActiveDay(slot.dayId, tonightId);
   }
   refreshChrome();
   renderContent(document.getElementById('content') as HTMLElement);

@@ -18,6 +18,37 @@ export function festivalInstant(isoDate: string, hhmm: string): Date {
 }
 
 /**
+ * The festival date an instant falls on, as "YYYY-MM-DD".
+ *
+ * A night is named by the date it opens on and keeps that name past midnight,
+ * so anything before 08:00 still belongs to the evening before — the same
+ * boundary `toMinutes` anchors the timeline on, so a set at 01:00 and the night
+ * it is listed under agree about which night that is.
+ */
+function festivalDateAt(ms: number): string {
+  const venue = new Date(ms + FEST_UTC_OFFSET_H * 3600_000);
+  if (venue.getUTCHours() < 8) venue.setUTCDate(venue.getUTCDate() - 1);
+  return venue.toISOString().slice(0, 10);
+}
+
+/**
+ * The night to open on, read off the clock: the one playing tonight while the
+ * festival runs, the opening night before it starts, and the closing night once
+ * it is over.
+ *
+ * The reading is taken on the venue's clock rather than the device's, for the
+ * same reason the set times are: the night on stage in the citadel is that
+ * night for everyone, whether the phone flew in with you or is still keeping
+ * time at home.
+ */
+export function nightForNow(nowMs: number = Date.now()): NightId {
+  const date = festivalDateAt(nowMs);
+  const tonight = DAYS.find((d) => d.date === date);
+  if (tonight) return tonight.id;
+  return date < DAYS[0].date ? DAYS[0].id : DAYS[DAYS.length - 1].id;
+}
+
+/**
  * Convert "HH:MM" into minutes from a noon anchor so that sets running past
  * midnight stay monotonically ordered (e.g. 01:00 -> next day).
  * Anything before 08:00 is considered part of the previous evening.

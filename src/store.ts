@@ -122,17 +122,33 @@ function load(key: string): string[] {
 
 export const selection = new SelectionStore();
 
-export function loadActiveDay(fallback: string): string {
+/**
+ * The night tab last opened, and the night that was on when it was opened.
+ *
+ * Storing the pair is what lets a tapped tab stay put without outliving the
+ * evening it was tapped on: the caller asks for the choice made *for* the night
+ * now running, so a tab left on Night II is quietly forgotten once the clock
+ * has moved on to Night III, and the app opens on what is actually playing.
+ *
+ * A value written by an older build is a bare id with nothing to date it by.
+ * That is exactly the stale tab this is here to drop, so it fails to parse and
+ * is treated as no choice at all.
+ */
+export function loadActiveDay(tonight: string): string {
   try {
-    return localStorage.getItem(DAY_KEY) || fallback;
+    const raw = localStorage.getItem(DAY_KEY);
+    if (!raw) return tonight;
+    const saved = JSON.parse(raw) as { id?: unknown; on?: unknown };
+    if (typeof saved?.id === 'string' && saved.on === tonight) return saved.id;
+    return tonight;
   } catch {
-    return fallback;
+    return tonight;
   }
 }
 
-export function saveActiveDay(id: string): void {
+export function saveActiveDay(id: string, tonight: string): void {
   try {
-    localStorage.setItem(DAY_KEY, id);
+    localStorage.setItem(DAY_KEY, JSON.stringify({ id, on: tonight }));
   } catch {
     /* ignore */
   }

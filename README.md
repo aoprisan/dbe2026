@@ -20,7 +20,9 @@ from the app's footer, and are the word that outranks anything here.
 
 - A "How this planner works" panel — the whole app in one minute, opened once on
   a first visit and afterwards from the `?` in the header
-- A single-stage timeline for all four festival nights
+- A single-stage timeline for all four festival nights, opening on the night
+  that is actually on — the clock picks the tab, and keeps picking it as the
+  nights turn over, until you pick another one yourself
 - Device-local picks and must-see acts
 - Live “now / next” status and set countdowns
 - Search, taste-based discovery, and changeover summaries
