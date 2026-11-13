@@ -15,7 +15,8 @@ from the app's footer, and are the word that outranks anything here.
 **[DBE 2027 →](https://aoprisan.github.io/dbe2026/2027/)** — the next edition,
 12–14 August 2027 at RYMA, has its own page beside this one, in the 2027
 poster's sepia rather than this planner's black and gold. It carries only what
-has been announced: the dates and three nights, each marked TBA. Its source is
+has been announced: the dates, three nights each marked TBA, and a link to
+the tickets on eventbook.ro. Its source is
 [`2027/index.html`](2027/index.html) and [`src/2027/`](src/2027); the 2026
 planner is untouched and stays at the root.
 

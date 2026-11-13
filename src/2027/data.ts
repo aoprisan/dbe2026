@@ -1,7 +1,7 @@
 /**
  * Dark Bombastic Evening 2027 — everything the festival has said so far, which
- * is one poster: the dates and the house. No bands, no count of bands, no
- * times, no tickets. Anything not on that poster is left out rather than
+ * is one poster and a ticket page: the dates, the house and where to buy.
+ * No bands, no count of bands, no times. Anything not on that poster is left out rather than
  * guessed, and every night says so.
  */
 export const FESTIVAL_2027 = {
@@ -12,6 +12,8 @@ export const FESTIVAL_2027 = {
   venue: 'RYMA',
   city: 'Alba Iulia, Romania',
   mapQuery: 'Poarta 7 by Ryma, Alba Iulia',
+  /** The shop's own page for this edition; prices are the shop's to state. */
+  ticketsUrl: 'https://eventbook.ro/music/bilete-dbe-2027',
   siteUrl: 'https://darkbombasticevening.com',
   facebookUrl: 'https://www.facebook.com/profile.php?id=100066546990712',
 };

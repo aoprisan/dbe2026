@@ -104,7 +104,11 @@ function render(root: HTMLElement): void {
       `${F.venue} · ${F.city}`,
     ),
   );
-  hero.append(where, renderCountdown(now));
+  const tickets = link(F.ticketsUrl, 'Tickets · eventbook.ro');
+  tickets.className = 'tickets';
+  const cta = el('p', 'hero-cta');
+  if (now < over) cta.append(tickets);
+  hero.append(where, renderCountdown(now), cta);
 
   const main = el('main');
   const list = el('ol', 'nights');
@@ -113,8 +117,8 @@ function render(root: HTMLElement): void {
   for (const n of NIGHTS_2027) list.append(renderNight(n, tonight));
   const known = el('p', 'known');
   known.textContent =
-    'That is everything announced so far: the dates and the house. ' +
-    'Bands, times and tickets will appear here when the festival names them.';
+    'That is everything announced so far: the dates, the house and the tickets. ' +
+    'Bands and times will appear here when the festival names them.';
   main.append(list, known);
 
   const footer = el('footer', 'foot');
