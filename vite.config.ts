@@ -1,5 +1,4 @@
 import { execSync } from 'node:child_process';
-import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'vite';
 import { VitePWA } from 'vite-plugin-pwa';
 
@@ -23,17 +22,6 @@ const buildCommit = (() => {
 
 export default defineConfig({
   base,
-  // Two pages, one deploy: the 2026 planner stays at the root, where it has
-  // always been and where installed copies start, and the 2027 edition lives
-  // beside it at /2027/.
-  build: {
-    rollupOptions: {
-      input: {
-        main: fileURLToPath(new URL('./index.html', import.meta.url)),
-        dbe2027: fileURLToPath(new URL('./2027/index.html', import.meta.url)),
-      },
-    },
-  },
   define: {
     __BUILD_TIME__: JSON.stringify(buildTime),
     __BUILD_COMMIT__: JSON.stringify(buildCommit),
@@ -86,9 +74,6 @@ export default defineConfig({
           },
         ],
         navigateFallback: `${base}index.html`,
-        // The 2027 page is its own document; without this the worker would
-        // answer a visit to it with the 2026 planner's shell.
-        navigateFallbackDenylist: [/\/2027(\/|$)/],
         cleanupOutdatedCaches: true,
       },
     }),
