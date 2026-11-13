@@ -12,6 +12,11 @@ from the app's footer, and are the word that outranks anything here.
 
 **[Open the planner](https://aoprisan.github.io/dbe2026/)**
 
+**[DBE 2027 →](https://aoprisan.github.io/dbe2027/)** — the next edition,
+12–14 August 2027 at RYMA, is a separate app with its own repository,
+[aoprisan/dbe2027](https://github.com/aoprisan/dbe2027). This planner stays as
+it is for 2026 and links to it from the footer.
+
 > The running order and set times are provisional until the festival publishes
 > an official timetable. This is a fan-made project and is not affiliated with
 > Dark Bombastic Evening.

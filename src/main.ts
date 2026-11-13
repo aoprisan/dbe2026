@@ -40,6 +40,15 @@ if (app) {
   // The festival's own addresses, right under the line that says this planner
   // is not the festival — if the two ever disagree, theirs is the one that wins.
   footer.appendChild(renderOfficialLinks());
+  // The next edition is its own app at its own address; this planner stays as
+  // it is for 2026.
+  const next = document.createElement('p');
+  next.className = 'footer-official';
+  const nextLink = document.createElement('a');
+  nextLink.href = 'https://aoprisan.github.io/dbe2027/';
+  nextLink.textContent = 'DBE 2027 · 12–14 August →';
+  next.appendChild(nextLink);
+  footer.appendChild(next);
   // Which build is on this device, and a way to go and fetch a newer one
   // without waiting for the service worker to notice on its own.
   footer.appendChild(renderBuildInfo());
